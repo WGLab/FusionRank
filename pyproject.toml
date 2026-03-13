@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fusionrank"
+version = "0.1.0"
+description = "FusionRank annotation and ranking CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas",
+  "numpy<2",
+  "biopython",
+  "lightgbm",
+  "gffutils",
+  "pyensembl",
+  "pybedtools",
+]
+
+[project.scripts]
+fusionrank = "fusionrank:main"
+prepare-pyensembl-cache = "prepare_pyensembl_cache:main"
+
+[tool.setuptools]
+py-modules = [
+  "fusionrank",
+  "fusionrank_config",
+  "fusionrank_core",
+  "prepare_pyensembl_cache",
+  "final_script",
+]
