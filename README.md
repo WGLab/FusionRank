@@ -18,6 +18,14 @@ fusionrank --help
 
 No separate prerequisite-install step is required.
 
+
+### Download References 
+To download the reference files used for feature annotation, run the following command:
+```
+wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
+```
+
+
 ## Run
 
 ```bash
