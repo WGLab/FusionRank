@@ -46,10 +46,10 @@ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencod
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.pc_translations.fa.gz
 ```
 
+---
 
 
-
-## Run
+## FusionRank Run Command
 
 ```bash
 fusionrank <input_file> \
