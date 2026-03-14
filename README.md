@@ -26,6 +26,29 @@ wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
 ```
 
 
+# Additional References: 
+
+Three main reference files are necessary and should be downloaded to the same folder as the previous reference files: https://www.gencodegenes.org/human/
+
+## Basic gene annotation (CHR)
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.basic.annotation.gtf.gz
+```
+
+## Transcript Sequences (ALL)
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.transcripts.fa.gz
+```
+
+## Protein-coding transcript translation sequences (ALL)
+
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.pc_translations.fa.gz
+```
+
+
+
+
 ## Run
 
 ```bash
