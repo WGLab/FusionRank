@@ -12,143 +12,54 @@ import numpy as np
 import pandas as pd
 import pybedtools
 
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  [0]  PREPROCESSING                                          ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+BKP_INPUT_COLS = [
+    'gene1_chr', 'gene1_bkp', 'gene1_strand',
+    'gene2_chr', 'gene2_bkp', 'gene2_strand',
+]
+
+def _has_breakpoint_cols(df):
+    """Returns True if all required breakpoint columns are present in df."""
+    return all(c in df.columns for c in BKP_INPUT_COLS)
+
 def preprocess_fusion_df(input_file):
     print(f'[0] Preprocessing: {input_file}')
     df = pd.read_csv(input_file, sep='\t')
 
-    # Keep mitochondrial/chrM fusions (no filtering here).
+    has_bkp = _has_breakpoint_cols(df)
 
-    # process remaining fusions 
-    for col in ['gene1_chr', 'gene2_chr']:
-        df[col] = (df[col].astype(str).str.strip()
-                   .apply(lambda x: x if x.startswith('chr') else f'chr{x}'))
-
-    for col in ['gene1_bkp', 'gene2_bkp']:
-        df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
-
-    for col in ['gene1_strand', 'gene2_strand']:
-        if col in df.columns:
-            df[col] = df[col].apply(lambda x: x if x in ['+', '-'] else None)
+    if has_bkp:
+        # process remaining fusions
+        for col in ['gene1_chr', 'gene2_chr']:
+            df[col] = (df[col].astype(str).str.strip()
+                       .apply(lambda x: x if x.startswith('chr') else f'chr{x}'))
+        for col in ['gene1_bkp', 'gene2_bkp']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
+        for col in ['gene1_strand', 'gene2_strand']:
+            if col in df.columns:
+                df[col] = df[col].apply(lambda x: x if x in ['+', '-'] else None)
+    else:
+        print('    ⚠️  Breakpoint columns not found — skipping breakpoint preprocessing and cleaning')
 
     if 'fusion_name' not in df.columns:
         df['fusion_name'] = df['gene1'] + '::' + df['gene2']
 
-    critical = ['gene1_chr','gene1_bkp','gene1_strand','gene2_chr','gene2_bkp','gene2_strand']
-    n_before = len(df)
-    df = df.dropna(subset=critical)
-    print(f'    {n_before:,} → {len(df):,} rows after cleaning')
+    if has_bkp:
+        critical = ['gene1_chr', 'gene1_bkp', 'gene1_strand', 'gene2_chr', 'gene2_bkp', 'gene2_strand']
+        n_before = len(df)
+        df = df.dropna(subset=critical)
+        print(f'    {n_before:,} → {len(df):,} rows after cleaning')
+    else:
+        print(f'    {len(df):,} rows loaded (no breakpoint cleaning applied)')
+
     return df
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [1]  ARTIFACT FLAGS                                         ║
-# ║       → n_gtex_samples, gtex_tier                            ║
-# ║       → in_babiceanu, in_ariba_blacklist                     ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-def annotate_artifacts(df, refs):
-    """
-    Adds: n_gtex_samples, gtex_tier, in_babiceanu, in_ariba_blacklist
-    Used by: relevance score (artifact tier 0)
-    """
-    print('[1] Artifact flags...')
-    df = df.copy()
-
-    # GTEx
-    gtex_df = pd.read_csv(refs['gtex_file'], sep='\t')
-    gtex_freq = (
-        gtex_df[gtex_df['cancer_type'] == 'GTEx_Normal']
-        .groupby('fusion_name')['sample_id'].nunique()
-        .reset_index().rename(columns={'sample_id': 'n_gtex_samples'})
-    )
-    df = df.merge(gtex_freq, on='fusion_name', how='left')
-    df['n_gtex_samples'] = df['n_gtex_samples'].fillna(0).astype(int)
-    df['gtex_tier'] = df['n_gtex_samples'].apply(
-        lambda n: 'not_in_gtex' if n == 0 else 'rare_in_gtex' if n == 1
-        else 'low_gtex' if n <= 10 else 'medium_gtex' if n <= 100 else 'high_gtex_artifact'
-    )
-
-    # Babiceanu
-    bab_df = pd.read_csv(refs['babiceanu_file'], sep='\t')
-    bab_set = set(bab_df['fusion_name'].str.upper())
-    rev = df['gene2'] + '::' + df['gene1']
-    df['in_babiceanu'] = (
-        df['fusion_name'].str.upper().isin(bab_set) |
-        rev.str.upper().isin(bab_set)
-    ).astype(int)
-
-    # ARIBA blacklist
-    ariba_df = pd.read_csv(refs['ariba_file'], sep='\t', header=None)
-    ariba_set = set(ariba_df.iloc[:, 0].str.upper())
-    df['in_ariba_blacklist'] = (
-        df['gene1'].str.upper().isin(ariba_set) |
-        df['gene2'].str.upper().isin(ariba_set)
-    ).astype(int)
-
-    print(f'    GTEx hits: {(df["n_gtex_samples"] > 0).sum():,} | '
-          f'Babiceanu: {df["in_babiceanu"].sum():,} | '
-          f'ARIBA: {df["in_ariba_blacklist"].sum():,}')
-    return df
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  [2]  GENE BIOTYPE                                           ║
-# ║       → gene1/2_is_protein_coding, is_lncrna, is_pseudogene  ║
-# ║       → gencode_artifact_count                               ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-_UNCHAR = re.compile(
-    r'^(AC|AL|AP|BX|CR|CT|FP|LO)[0-9]+\.[0-9]+$|'
-    r'^RP[0-9]+-[A-Z0-9]+\.[0-9]+$|^CTD-[A-Z0-9]+\.[0-9]+$|'
-    r'^CTC-[A-Z0-9]+\.[0-9]+$|^KB-[A-Z0-9]+\.[0-9]+$|'
-    r'^LINC[0-9]+$|^LOC[0-9]+$'
-)
-_LNCRNA_TYPES = {'lncRNA','lincRNA','antisense','sense_intronic',
-                 'sense_overlapping','bidirectional_promoter_lncRNA'}
-
-def _is_lncrna(gene, gtt):
-    return bool(gtt.get(gene,'') in _LNCRNA_TYPES or
-                (_UNCHAR.match(str(gene)) and gtt.get(gene,'') != 'protein_coding'))
-
-def annotate_gene_biotype(df, refs):
-    """
-    Adds: gene1/2_{type, is_protein_coding, is_lncrna, is_pseudogene},
-          gencode_artifact_count
-    Used by: relevance score (non-cancer tissue cap, tier 1)
-    """
-    print('[2] Gene biotype...')
-    df = df.copy()
-    with open(refs['gene_to_type_pkl'], 'rb') as f:
-        gtt = pickle.load(f)
-
-    mito = {g for g in gtt if g.startswith('MT-')}
-    artifact_flags = ['is_lncrna','is_pseudogene','is_mito','is_mirna',
-                      'is_snrna','is_snorna','is_rrna','is_ig','is_tcr']
-
-    for g in [1, 2]:
-        gs = df[f'gene{g}']
-        gsu = gs.str.upper().str.strip()
-        gt  = gs.map(gtt)
-        df[f'gene{g}_type']             = gt
-        df[f'gene{g}_is_protein_coding']= (gt == 'protein_coding').astype(int)
-        df[f'gene{g}_is_lncrna']        = gs.apply(lambda x: int(_is_lncrna(x, gtt)))
-        df[f'gene{g}_is_mito']          = gsu.isin(mito).astype(int)
-        df[f'gene{g}_is_pseudogene']    = gt.str.contains('pseudogene', na=False).astype(int)
-        df[f'gene{g}_is_mirna']         = (gt == 'miRNA').astype(int)
-        df[f'gene{g}_is_snrna']         = (gt == 'snRNA').astype(int)
-        df[f'gene{g}_is_snorna']        = (gt == 'snoRNA').astype(int)
-        df[f'gene{g}_is_rrna']          = gt.str.contains('rRNA', na=False).astype(int)
-        df[f'gene{g}_is_ig']            = gt.str.startswith('IG_', na=False).astype(int)
-        df[f'gene{g}_is_tcr']           = gt.str.startswith('TR_', na=False).astype(int)
-
-    art_cols = [f'gene{g}_{f}' for f in artifact_flags for g in [1,2]]
-    df['gencode_artifact_count'] = df[art_cols].sum(axis=1)
-    print(f'    protein_coding g1/g2: {df["gene1_is_protein_coding"].sum()} / {df["gene2_is_protein_coding"].sum()}')
-    return df
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  [3]  CIViC                                                  ║
+# ║  [1]  CIViC                                                  ║
 # ║       → in_civic_exact, in_civic_wildcard                    ║
 # ║       → civic_best_evidence_score, civic_has_therapeutic     ║
 # ║       → civic_match_score                                    ║
@@ -160,7 +71,7 @@ def annotate_civic(df, refs):
           civic_has_therapeutic, civic_match_score
     Used by: relevance score (tier 4 therapeutic check)
     """
-    print('[3] CIViC...')
+    print('[1] CIViC...')
     df = df.copy()
     civic = pd.read_csv(refs['civic_file'], sep='\t')
 
@@ -244,7 +155,7 @@ def annotate_civic(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [4]  COSMIC                                                 ║
+# ║  [2]  COSMIC                                                 ║
 # ║       → in_cosmic_exact, in_cosmic_same_cancer               ║
 # ║       → cosmic_gene_involved, cosmic_match_score             ║
 # ╚══════════════════════════════════════════════════════════════╝
@@ -255,7 +166,7 @@ def annotate_cosmic(df, refs):
           cosmic_gene_involved, cosmic_match_score
     Used by: relevance score (tier 3 & tier 2 pathway 1)
     """
-    print('[4] COSMIC...')
+    print('[2] COSMIC...')
     df = df.copy()
     cosmic = pd.read_csv(refs['cosmic_file'], sep='\t')
 
@@ -293,66 +204,8 @@ def annotate_cosmic(df, refs):
           f'cosmic_gene_involved: {df["cosmic_gene_involved"].sum()}')
     return df
 
-
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [5]  MITELMAN                                               ║
-# ║       → in_mitelman_exact, in_mitelman_same_cancer           ║
-# ║       → mitelman_literature_count, mitelman_same_cancer_count║
-# ║       → mitelman_match_score                                 ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-def annotate_mitelman(df, refs):
-    """
-    Adds: in_mitelman_exact, in_mitelman_same_cancer,
-          mitelman_literature_count, mitelman_same_cancer_count,
-          mitelman_match_score
-    Used by: relevance score (tier 2 pathway 3)
-    """
-    print('[5] Mitelman...')
-    df = df.copy()
-    mit = pd.read_csv(refs['mitelman_file'], sep='\t').rename(columns={'Fusion Gene':'fusion_name'})
-
-    split = mit['fusion_name'].str.split('::')
-    mit_pairs = (
-        set(mit['fusion_name'].str.upper()) |
-        set((split.str[1]+'::'+split.str[0]).str.upper())
-    )
-    max_count = (mit.groupby('fusion_name')['Count'].max().reset_index()
-                 .rename(columns={'Count':'mitelman_max_count'}))
-    mc_map = dict(zip(max_count['fusion_name'].str.upper(), max_count['mitelman_max_count']))
-    mc_map.update(dict(zip(
-        (max_count['fusion_name'].str.split('::').str[1]+'::'+
-         max_count['fusion_name'].str.split('::').str[0]).str.upper(),
-        max_count['mitelman_max_count']
-    )))
-
-    mit_by_cancer = {}
-    for ct in mit['tcga_cancer_type'].unique():
-        sub = mit[mit['tcga_cancer_type']==ct]
-        sp  = sub['fusion_name'].str.split('::')
-        m   = dict(zip(sub['fusion_name'].str.upper(), sub['Count']))
-        m.update(dict(zip((sp.str[1]+'::'+sp.str[0]).str.upper(), sub['Count'])))
-        mit_by_cancer[ct] = m
-
-    fn_up = df['fusion_name'].str.upper()
-    df['in_mitelman_exact']       = fn_up.isin(mit_pairs).astype(int)
-    df['in_mitelman_same_cancer'] = df.apply(
-        lambda r: int(r['cancer_type'] in mit_by_cancer and
-                      r['fusion_name'].upper() in mit_by_cancer[r['cancer_type']]), axis=1)
-    df['mitelman_literature_count']  = fn_up.map(mc_map).fillna(0).astype(int)
-    df['mitelman_same_cancer_count'] = df.apply(
-        lambda r: mit_by_cancer.get(r['cancer_type'],{}).get(r['fusion_name'].upper(),0), axis=1)
-    df['mitelman_match_score'] = df.apply(
-        lambda r: (2 if r['cancer_type'] in mit_by_cancer and
-                        r['fusion_name'].upper() in mit_by_cancer[r['cancer_type']]
-                   else 1 if r['fusion_name'].upper() in mit_pairs else 0), axis=1)
-
-    print(f'    in_mitelman_exact: {df["in_mitelman_exact"].sum()}')
-    return df
-
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  [6]  CANCERMINE + HUGO GENE FUNCTION FLAGS                  ║
+# ║  [3]  CANCERMINE + HUGO GENE FUNCTION FLAGS                  ║
 # ║       → gene1/2_{oncogene, tsg, driver, is_kinase, is_tf,    ║
 # ║          is_rna_binding, is_chromatin, is_rtk,               ║
 # ║          is_phosphatase, is_cell_cycle, is_ubiquitin,        ║
@@ -366,7 +219,7 @@ def annotate_gene_function(df, refs):
      ubiquitin, gtpase, dna_repair).
     Used by: relevance score (tiers 1-3) + model features
     """
-    print('[6] CancerMine + HUGO gene function...')
+    print('[3] CancerMine + HUGO gene function...')
     df = df.copy()
 
     # ── CancerMine ────────────────────────────────────────────
@@ -424,7 +277,7 @@ def annotate_gene_function(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [7]  CLINICAL PANELS                                        ║
+# ║  [4]  CLINICAL PANELS                                        ║
 # ║       → gene1/2_in_any_panel                                 ║
 # ╚══════════════════════════════════════════════════════════════╝
 
@@ -433,7 +286,7 @@ def annotate_panels(df, refs):
     Adds: gene1_in_any_panel, gene2_in_any_panel
     Model feature.
     """
-    print('[7] Clinical panels...')
+    print('[4] Clinical panels...')
     df = df.copy()
     panel_df = pd.read_csv(refs['fusion_panels'], sep='\t')
     any_panel = set(panel_df['gene'].str.upper())
@@ -448,7 +301,7 @@ def annotate_panels(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [8]  TAD SAME DOMAIN                                        ║
+# ║  [5]  TAD SAME DOMAIN                                        ║
 # ║       → tad_same_domain                                      ║
 # ╚══════════════════════════════════════════════════════════════╝
 
@@ -457,7 +310,7 @@ def annotate_tad(df, refs):
     Adds: tad_same_domain
     Model feature.
     """
-    print('[8] TAD boundary...')
+    print('[5] TAD boundary...')
     df = df.copy()
     with open(refs['tad_pickle'], 'rb') as f:
         tad_dict = pickle.load(f)
@@ -470,7 +323,7 @@ def annotate_tad(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [9]  PPI NETWORK  (OmniPath)                                ║
+# ║  [6]  PPI NETWORK  (OmniPath)                                ║
 # ║       → gene1/2_centrality, centrality_sum/max_log           ║
 # ║       → ppi_direct_interaction, ppi_interaction_score        ║
 # ║       → ppi_shared_neighbors, ppi_jaccard_similarity         ║
@@ -489,7 +342,7 @@ def annotate_ppi(df, refs):
 
     Run preprocess_omnipath.py once to generate these files.
     """
-    print('[9] PPI network (from cache)...')
+    print('[6] PPI network (from cache)...')
     df = df.copy()
 
     # ── Load cache files ──────────────────────────────────────
@@ -543,7 +396,7 @@ def annotate_ppi(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║  [10] DRUGGABILITY                                               ║
+# ║  [7] DRUGGABILITY                                                ║
 # ║       → fusion_is_druggable, fusion_is_druggable_cancer_specific ║
 # ║       → fusion_has_druggable_gene, gene1/2_is_druggable          ║
 # ║       → gene1/2_druggable_cancer_specific                        ║
@@ -558,7 +411,7 @@ def annotate_druggability(df, refs):
           fusion_gene_druggable_cancer_specific
     Used by: relevance score (all tiers)
     """
-    print('[10] Druggability...')
+    print('[7] Druggability...')
     df = df.copy()
     drug = pd.read_csv(refs['druggable_file'], sep='\t')
 
@@ -600,7 +453,7 @@ def annotate_druggability(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [11] BREAKPOINT REGION ANNOTATION  (bedtools)               ║
+# ║  [8] BREAKPOINT REGION ANNOTATION  (bedtools)                ║
 # ║       → gene1/2_region_type, gene1/2_bkp_category            ║
 # ║       → gene1/2_transcript_id  (needed by Part 12)           ║
 # ╚══════════════════════════════════════════════════════════════╝
@@ -619,13 +472,29 @@ _LOCI_COLS = ['bp_chr','bp_start','bp_end','which_gene','bp_score','bp_strand',
               'gene1_strand','gene2_strand',
               'ann_chr','ann_start','ann_end','ann_gene_name','ann_score','ann_strand']
 
+
+_BKP_OUTPUT_COLS = ['gene1_region_type', 'gene1_bkp_category', 'gene1_transcript_id',
+                    'gene2_region_type', 'gene2_bkp_category', 'gene2_transcript_id']
+
+
 def annotate_breakpoints(df, refs, output_dir, project_name):
     """
     Adds: gene1/2_region_type, gene1/2_bkp_category, gene1/2_transcript_id
     Also corrects gene names via GENCODE loci overlap.
     Model features. Part 12 (cDNA) depends on this running first.
+
+    If breakpoint columns (gene1/2_chr, gene1/2_bkp, gene1/2_strand) are absent
+    from df, all output columns are set to pd.NA and bedtools is skipped entirely.
     """
-    print('[11] Breakpoint annotation (pybedtools)...')
+    print('[8] Breakpoint annotation (bedtools)...')
+
+    if not _has_breakpoint_cols(df):
+        print('    ⚠️  Breakpoint columns not found — skipping bedtools, filling outputs with NA')
+        df = df.copy()
+        for col in _BKP_OUTPUT_COLS:
+            df[col] = pd.NA
+        return df
+
     df = df.copy()
     os.makedirs(output_dir, exist_ok=True)
 
@@ -800,11 +669,20 @@ def annotate_breakpoints(df, refs, output_dir, project_name):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [12] cDNA / PYENSEMBL FEATURES                              ║
+# ║  [9] cDNA / PYENSEMBL FEATURES                               ║
 # ║       → gene1/2_frame_mod3, fusion_in_frame, has_early_stop  ║
 # ║       → gene1/2_fusion_pct                                   ║
 # ║       → log_gene1/2_len_nt, log_gene1/2_utr5/3_len           ║
 # ╚══════════════════════════════════════════════════════════════╝
+
+_CDNA_OUTPUT_COLS = [
+    'gene1_frame_mod3', 'gene2_frame_mod3',
+    'fusion_in_frame', 'has_early_stop',
+    'gene1_fusion_pct', 'gene2_fusion_pct',
+    'log_gene1_len_nt', 'log_gene2_len_nt',
+    'log_gene1_utr5_len', 'log_gene1_utr3_len',
+    'log_gene2_utr5_len', 'log_gene2_utr3_len',
+]
 
 def annotate_cdna_features(df, refs):
     """
@@ -813,12 +691,33 @@ def annotate_cdna_features(df, refs):
           gene1/2_fusion_pct, log_gene1/2_len_nt,
           log_gene1/2_utr5_len, log_gene1/2_utr3_len
     Model features.
+
+    If gene1/2_transcript_id columns are absent or entirely NA (i.e. [11]
+    was skipped due to missing breakpoint columns), all output columns are
+    set to pd.NA and the function returns early.
     """
-    print('[12] cDNA features (PyEnsembl)...')
+    print('[9] cDNA features (PyEnsembl)...')
+
+    # Guard: transcript_id columns must exist and have at least one non-NA value
+    tx_cols_present = (
+        'gene1_transcript_id' in df.columns and
+        'gene2_transcript_id' in df.columns
+    )
+    tx_cols_populated = tx_cols_present and (
+        df['gene1_transcript_id'].notna().any() or
+        df['gene2_transcript_id'].notna().any()
+    )
+
+    if not tx_cols_populated:
+        print('    ⚠️  gene1/2_transcript_id not available — skipping cDNA annotation, filling outputs with NA')
+        df = df.copy()
+        for col in _CDNA_OUTPUT_COLS:
+            df[col] = pd.NA
+        return df
+
     import pyensembl
     from Bio.Seq import Seq
     df = df.copy()
-
     gd = pyensembl.Genome(
         reference_name='GRCh38', annotation_name='gencode', annotation_version='v49',
         gtf_path_or_url=refs['gencode_gtf'],
@@ -828,7 +727,6 @@ def annotate_cdna_features(df, refs):
         copy_local_files_to_cache=False,
     )
     gd.index()
-
     tx_ids = list(set(df['gene1_transcript_id'].dropna().tolist() +
                       df['gene2_transcript_id'].dropna().tolist()))
     tx_cache = {}
@@ -836,7 +734,6 @@ def annotate_cdna_features(df, refs):
         try: tx_cache[tx] = gd.transcript_by_id(tx)
         except: tx_cache[tx] = None
     print(f'    Cached {sum(v is not None for v in tx_cache.values()):,}/{len(tx_cache):,} transcripts')
-
     txinfo = {}
     for tx_id, tx in tx_cache.items():
         if tx is None: txinfo[tx_id] = None; continue
@@ -852,29 +749,21 @@ def annotate_cdna_features(df, refs):
         try: coding = str(tx.coding_sequence) if tx.coding_sequence else ''
         except: coding = ''
         txinfo[tx_id] = dict(smap=smap, utr5=utr5, utr3=utr3, coding=coding)
-
     def _extract(row):
         def _part(tx_id, bkp, is_g1, bkp_category=None):
             info = txinfo.get(tx_id)
-            if not info:
-                return '', None
-
+            if not info: return '', None
             bkp_int = int(bkp)
             off = info['smap'].get(bkp_int)
-
             # If breakpoint falls in intron, snap to nearest exon boundary
             if off is None and bkp_category in ('Near_Exon_Intron',):
                 nearest = min(info['smap'].keys(), key=lambda p: abs(p - bkp_int))
                 off = info['smap'].get(nearest)
-
-            if off is None:
-                return '', None
-
+            if off is None: return '', None
             coff = off - info['utr5']
             seq = info['coding'][:coff] if is_g1 else info['coding'][coff-1:]
             return seq.upper(), len(seq) % 3
-
-        g1s, g1m = _part(row.get('gene1_transcript_id'), row['gene1_bkp'], True, row.get('gene1_bkp_category'))
+        g1s, g1m = _part(row.get('gene1_transcript_id'), row['gene1_bkp'], True,  row.get('gene1_bkp_category'))
         g2s, g2m = _part(row.get('gene2_transcript_id'), row['gene2_bkp'], False, row.get('gene2_bkp_category'))
         fused = g1s + g2s
         in_frame = (1 if len(fused) % 3 == 0 else 0) if (g1s and g2s) else 1
@@ -884,10 +773,8 @@ def annotate_cdna_features(df, refs):
             fs = prot.find('*')
             hes = int(fs != -1 and fs < len(prot)-1)
         return pd.Series([len(g1s), len(g2s), g1m, g2m, in_frame, hes])
-
     df[['gene1_len_nt','gene2_len_nt','gene1_frame_mod3','gene2_frame_mod3',
         'fusion_in_frame','has_early_stop']] = df.apply(_extract, axis=1)
-
     def _pct(row):
         res = [0.0, 0.0]
         for i, side in enumerate(['gene1','gene2']):
@@ -895,37 +782,30 @@ def annotate_cdna_features(df, refs):
             if info and info['coding']:
                 res[i] = row[f'{side}_len_nt'] / len(info['coding']) * 100
         return pd.Series(res)
-
     df[['gene1_fusion_pct','gene2_fusion_pct']] = df.apply(_pct, axis=1)
-
     def _utr(row):
         vals = []
         for side in ['gene1','gene2']:
             info = txinfo.get(row.get(f'{side}_transcript_id'))
             vals += [info['utr5'], info['utr3']] if info else [0, 0]
         return pd.Series(vals)
-
     df[['gene1_utr5_len','gene1_utr3_len','gene2_utr5_len','gene2_utr3_len']] = df.apply(_utr, axis=1)
-
     df['log_gene1_len_nt']   = np.log1p(df['gene1_len_nt'])
     df['log_gene2_len_nt']   = np.log1p(df['gene2_len_nt'])
     df['log_gene1_utr5_len'] = np.log1p(df['gene1_utr5_len'])
     df['log_gene1_utr3_len'] = np.log1p(df['gene1_utr3_len'])
     df['log_gene2_utr5_len'] = np.log1p(df['gene2_utr5_len'])
     df['log_gene2_utr3_len'] = np.log1p(df['gene2_utr3_len'])
-
     in_frame_pct = (df['fusion_in_frame']=='Yes').mean()*100
     print(f'    in_frame: {in_frame_pct:.1f}% | early_stop: {df["has_early_stop"].sum()}')
-    
+
     df = df.drop(columns=['gene1_len_nt', 'gene2_len_nt',
                           'gene1_utr5_len', 'gene1_utr3_len', 'gene2_utr5_len', 'gene2_utr3_len'])
-
     return df
 
 
-
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [13] CANCER DB                                              ║
+# ║  [10] CANCER DB                                              ║
 # ║       → gene1/2_in_cancer_db, gene1/2_cancer_db_mismatch     ║
 # ║       → gene1/2_unknown_in_cancer                            ║
 # ╚══════════════════════════════════════════════════════════════╝
@@ -1041,7 +921,7 @@ def annotate_cancer_db(df, refs, valid_cancer_types=VALID_CANCER_TYPES):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [14] EXPRESSION  ← STUB                                     ║
+# ║  [11] EXPRESSION  ← STUB                                     ║
 # ║       → g1/2_log_exp, gene1/2_exp_low                        ║
 # ║       → gene1/2_low_everywhere                               ║
 # ║       → fusion_tissue_fit, exp_cancer_mismatch               ║
@@ -1161,11 +1041,8 @@ def run_full_pipeline(input_file, output_dir, project_name, refs):
     """Run all annotation steps and save final TSV."""
     os.makedirs(output_dir, exist_ok=True)
     df = preprocess_fusion_df(input_file)
-    df = annotate_artifacts(df, refs)
-    df = annotate_gene_biotype(df, refs)
     df = annotate_civic(df, refs)
     df = annotate_cosmic(df, refs)
-    df = annotate_mitelman(df, refs)
     df = annotate_gene_function(df, refs)
     df = annotate_panels(df, refs)
     df = annotate_tad(df, refs)
@@ -1184,7 +1061,7 @@ def run_full_pipeline(input_file, output_dir, project_name, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [16]  RANKING                                               ║
+# ║  [12]  RANKING                                               ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 
@@ -1227,7 +1104,7 @@ def rank_fusions(df, model, feature_cols, categorical_cols):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [17]  SUMMARY OUTPUT                                        ║
+# ║  [13]  SUMMARY OUTPUT                                        ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 def make_summary_tsv(df, refs):
@@ -1326,14 +1203,27 @@ def make_summary_tsv(df, refs):
     work = df.sort_values(['sample_id', 'gene1', 'gene2', 'normalized_score'], ascending=[True, True, True, False]).copy()
 
     # Precompute all breakpoints text + best breakpoint row once per fusion key.
-    bkp_cols = ['sample_id', 'gene1', 'gene2', 'gene1_chr', 'gene1_bkp', 'gene2_chr', 'gene2_bkp', 'normalized_score']
-    bkp_df = work[bkp_cols].drop_duplicates()
+    has_bkp = all(c in work.columns for c in ['gene1_chr', 'gene1_bkp', 'gene2_chr', 'gene2_bkp'])
+    if has_bkp:
+        bkp_cols = ['sample_id', 'gene1', 'gene2', 'gene1_chr', 'gene1_bkp', 'gene2_chr', 'gene2_bkp', 'normalized_score']
+        bkp_df = work[bkp_cols].drop_duplicates()
+    else:
+        bkp_cols = ['sample_id', 'gene1', 'gene2', 'normalized_score']
+        bkp_df = work[bkp_cols].drop_duplicates()
 
+
+        
     def _bkp_text(g):
-        return '\n'.join(
-            f"{g.name[1]};{r.gene1_chr}:{int(r.gene1_bkp)},{g.name[2]};{r.gene2_chr}:{int(r.gene2_bkp)};{r.normalized_score:.3f}"
-            for r in g.itertuples(index=False)
-        )
+        if has_bkp:
+            return '\n'.join(
+                f"{g.name[1]};{r.gene1_chr}:{int(r.gene1_bkp)},{g.name[2]};{r.gene2_chr}:{int(r.gene2_bkp)};{r.normalized_score:.3f}"
+                for r in g.itertuples(index=False)
+            )
+        else:
+            return '\n'.join(
+                f"{g.name[1]}::{g.name[2]};{r.normalized_score:.3f}"
+                for r in g.itertuples(index=False)
+            )        
 
     bkp_text = (
         bkp_df.groupby(key_cols, sort=False)
@@ -1343,8 +1233,14 @@ def make_summary_tsv(df, refs):
     )
 
     best_bkp = bkp_df.drop_duplicates(subset=key_cols, keep='first').copy()
-    best_bkp['gene1_breakpoint'] = best_bkp.apply(lambda r: f"{r['gene1_chr']}:{int(r['gene1_bkp']):,}", axis=1)
-    best_bkp['gene2_breakpoint'] = best_bkp.apply(lambda r: f"{r['gene2_chr']}:{int(r['gene2_bkp']):,}", axis=1)
+    
+    if has_bkp:
+        best_bkp['gene1_breakpoint'] = best_bkp.apply(lambda r: f"{r['gene1_chr']}:{int(r['gene1_bkp']):,}", axis=1)
+        best_bkp['gene2_breakpoint'] = best_bkp.apply(lambda r: f"{r['gene2_chr']}:{int(r['gene2_bkp']):,}", axis=1)
+    else:
+        best_bkp['gene1_breakpoint'] = '—'
+        best_bkp['gene2_breakpoint'] = '—'    
+    
     best_bkp = best_bkp[key_cols + ['gene1_breakpoint', 'gene2_breakpoint']]
 
     sample_data = work.drop_duplicates(subset=key_cols, keep='first').copy()
@@ -1359,8 +1255,6 @@ def make_summary_tsv(df, refs):
             db_evidence.append('CIViC exact match')
         if getattr(row, 'in_cosmic_exact', 0):
             db_evidence.append('COSMIC exact match')
-        if getattr(row, 'in_mitelman_exact', 0):
-            db_evidence.append('Mitelman DB match')
         if getattr(row, 'in_cosmic_same_cancer', 0):
             db_evidence.append('COSMIC same cancer')
         if getattr(row, 'cosmic_gene_involved', 0) and not getattr(row, 'in_cosmic_exact', 0):
