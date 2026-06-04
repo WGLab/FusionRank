@@ -74,9 +74,6 @@ fusionrank <input_file> \
 > **Note:** Breakpoint columns are optional. If absent, breakpoint annotation and cDNA features are skipped automatically and `FR_gene_name_model` should be used.
 
 
-
-
-
 ## Optional one-time PyEnsembl pre-index (recommended)
 If the pipeline appears to stall during cDNA annotation (PyEnsembl indexing), run this once first:
 
@@ -100,6 +97,53 @@ Created under `<output_dir>/<sample_prefix>/`:
 Summary files include: sample/cancer/rank/fusion, normalized score, best breakpoints, database evidence, drug evidence, gene biology, panel evidence, and all breakpoint candidates with normalized scores.
 
 
+---
+
+## Supported Cancer Types
+
+The `cancer_type` column must use one of the following TCGA/pediatric acronyms:
+
+| Cancer Acronym | Full Name |
+|:---------:|:-----------:|
+| ACC | Adrenocortical Carcinoma |
+| ALL | Acute Lymphoblastic Leukemia |
+| BLCA | Bladder Urothelial Carcinoma |
+| BRCA | Breast Invasive Carcinoma |
+| CCSK | Clear Cell Sarcoma of the Kidney |
+| CESC | Cervical Squamous Cell Carcinoma |
+| CHOL | Cholangiocarcinoma |
+| COAD | Colon Adenocarcinoma |
+| DLBC | Diffuse Large B-Cell Lymphoma |
+| ESCA | Esophageal Carcinoma |
+| GBM | Glioblastoma Multiforme |
+| HNSC | Head and Neck Squamous Cell Carcinoma |
+| KICH | Kidney Chromophobe |
+| KIRC | Kidney Renal Clear Cell Carcinoma |
+| KIRP | Kidney Renal Papillary Cell Carcinoma |
+| LAML | Acute Myeloid Leukemia |
+| LGG | Brain Lower Grade Glioma |
+| LIHC | Liver Hepatocellular Carcinoma |
+| LUAD | Lung Adenocarcinoma |
+| LUSC | Lung Squamous Cell Carcinoma |
+| MESO | Mesothelioma |
+| NBL | Neuroblastoma |
+| OS | Osteosarcoma |
+| OV | Ovarian Serous Cystadenocarcinoma |
+| PAAD | Pancreatic Adenocarcinoma |
+| PCPG | Pheochromocytoma and Paraganglioma |
+| PRAD | Prostate Adenocarcinoma |
+| READ | Rectum Adenocarcinoma |
+| RT | Rhabdoid Tumor |
+| SARC | Sarcoma |
+| SKCM | Skin Cutaneous Melanoma |
+| STAD | Stomach Adenocarcinoma |
+| TGCT | Testicular Germ Cell Tumors |
+| THCA | Thyroid Carcinoma |
+| THYM | Thymoma |
+| UCS | Uterine Carcinosarcoma |
+| UCEC | Uterine Corpus Endometrial Carcinoma |
+| UVM | Uveal Melanoma |
+| WT | Wilms Tumor |
 
 --- 
 Refs now use explicit OmniPath file keys: `ppi_adjacency_file`, `ppi_centrality_file`, and `ppi_edges_file` (auto-discovered when using `--refs-dir`).
