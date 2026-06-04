@@ -1,8 +1,15 @@
 # FusionRank
 
+FusionRank is a machine learning-based tool for prioritizing gene fusions detected from RNA sequencing data. It annotates fusion candidates with structural, biological, and genomic features and ranks them by predicted oncogenic relevance using a Learning-to-Rank LambdaRank model trained on curated fusion databases.
+
+FusionRank supports two modes:
+- **Breakpoint-level ranking** (`FR_gene_breakpoint_model`) — uses chromosomal breakpoint coordinates for full annotation including cDNA features and region classification
+- **Gene-name-level ranking** (`FR_gene_name_model`) — works without breakpoint coordinates for callers that do not report breakpoint information
+
+If you use FusionRank in your research, please cite ... 
 
 
-## Installation (single pip command)
+## FusionRank Installation (single pip command)
 
 From the repo root, install locally with dependencies and CLI entrypoint:
 
@@ -27,21 +34,19 @@ wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
 
 
 # Additional References: 
+- Three main reference files from GENCODE (gencode.v49) are necessary and should be downloaded to the same folder as the previous reference files: https://www.gencodegenes.org/human/
 
-Three main reference files are necessary and should be downloaded to the same folder as the previous reference files: https://www.gencodegenes.org/human/
-
-## Basic gene annotation (CHR)
+### 1. Basic gene annotation (CHR)
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.basic.annotation.gtf.gz
 ```
 
-## Transcript Sequences (ALL)
+### 2. Transcript Sequences (ALL)
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.transcripts.fa.gz
 ```
 
-## Protein-coding transcript translation sequences (ALL)
-
+### 3. Protein-coding transcript translation sequences (ALL)
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.pc_translations.fa.gz
 ```
@@ -49,7 +54,7 @@ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencod
 ---
 
 
-## FusionRank Run Command
+# FusionRank Run Command
 
 ```bash
 fusionrank <input_file> \
@@ -58,19 +63,7 @@ fusionrank <input_file> \
   --refs-dir <reference_root> \
   --model-dir <model_dir>
 ```
-
-## Optional one-time PyEnsembl pre-index (recommended)
-
-If the pipeline appears to hang during cDNA annotation (PyEnsembl indexing), run this once first:
-
-```bash
-python prepare_pyensembl_cache.py --refs-dir <reference_root>
-```
-
-Then run FusionRank normally.
-
-
-## Inputs
+## FusionRank Input Parameters
 - `input_file` (positional): fusion input TSV.
 - `--sample-prefix`: prefix used for output files and run directory naming.
 - `--refs-dir`: path to the reference root folder; paths are auto-discovered by expected filenames/subfolders (no manual refs JSON needed).
@@ -81,20 +74,35 @@ Then run FusionRank normally.
 > **Note:** Breakpoint columns are optional. If absent, breakpoint annotation and cDNA features are skipped automatically and `FR_gene_name_model` should be used.
 
 
-## Outputs
+
+
+
+## Optional one-time PyEnsembl pre-index (recommended)
+If the pipeline appears to stall during cDNA annotation (PyEnsembl indexing), run this once first:
+
+```bash
+python prepare_pyensembl_cache.py --refs-dir <reference_root>
+```
+
+Then run FusionRank normally.
+
+
+---
+
+# FusionRank Outputs
 
 Created under `<output_dir>/<sample_prefix>/`:
-
 - `<sample_prefix>_annotated.tsv`
 - `<sample_prefix>_annotated_ranked.tsv`
 - `<sample_prefix>_summary.tsv`
 - `<sample_prefix>_top5.tsv`
 
-Summary files are now evidence-oriented and include: sample/cancer/rank/fusion, normalized score, best breakpoints, database evidence, drug evidence, gene biology, panel evidence, and all breakpoint candidates with normalized scores.
+Summary files include: sample/cancer/rank/fusion, normalized score, best breakpoints, database evidence, drug evidence, gene biology, panel evidence, and all breakpoint candidates with normalized scores.
 
 
+
+--- 
 Refs now use explicit OmniPath file keys: `ppi_adjacency_file`, `ppi_centrality_file`, and `ppi_edges_file` (auto-discovered when using `--refs-dir`).
-
 
 Reference directory behavior: `--refs-dir` is the only reference input. The pipeline auto-discovers required files under that folder, creates `gencode_v49_downloads_cache/` inside it if missing, and expects these GENCODE files at the refs root: `gencode.v49.basic.annotation.gtf.gz`, `gencode.v49.transcripts.fa.gz`, `gencode.v49.pc_translations.fa.gz`.
 
