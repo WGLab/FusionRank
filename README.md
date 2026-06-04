@@ -1,6 +1,6 @@
 # FusionRank
 
-Refactored into modular scripts with a CLI entrypoint.
+
 
 ## Installation (single pip command)
 
@@ -18,7 +18,38 @@ fusionrank --help
 
 No separate prerequisite-install step is required.
 
-## Run
+
+### Download References 
+To download the reference files used for feature annotation, run the following command:
+```
+wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
+```
+
+
+# Additional References: 
+
+Three main reference files are necessary and should be downloaded to the same folder as the previous reference files: https://www.gencodegenes.org/human/
+
+## Basic gene annotation (CHR)
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.basic.annotation.gtf.gz
+```
+
+## Transcript Sequences (ALL)
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.transcripts.fa.gz
+```
+
+## Protein-coding transcript translation sequences (ALL)
+
+```
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.pc_translations.fa.gz
+```
+
+---
+
+
+## FusionRank Run Command
 
 ```bash
 fusionrank <input_file> \
@@ -40,14 +71,15 @@ Then run FusionRank normally.
 
 
 ## Inputs
-
 - `input_file` (positional): fusion input TSV.
 - `--sample-prefix`: prefix used for output files and run directory naming.
 - `--refs-dir`: path to the reference root folder; paths are auto-discovered by expected filenames/subfolders (no manual refs JSON needed).
-- `--model-dir`: directory containing:
-  - `fusion_lambdarank.txt`
-  - `feature_cols.pkl`
-  - `categorical_cols.pkl`
+- `--model-dir`: directory containing the trained model files (`fusion_lambdarank.txt`, `feature_cols.pkl`, `categorical_cols.pkl`). Two models are available:
+  - `FR_gene_breakpoint_model` — requires breakpoint columns (`gene1_chr`, `gene1_bkp`, `gene1_strand`, `gene2_chr`, `gene2_bkp`, `gene2_strand`)
+  - `FR_gene_name_model` — works without breakpoint columns (gene name level only)
+
+> **Note:** Breakpoint columns are optional. If absent, breakpoint annotation and cDNA features are skipped automatically and `FR_gene_name_model` should be used.
+
 
 ## Outputs
 
