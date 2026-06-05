@@ -1,110 +1,147 @@
 # FusionRank
+FusionRank is a machine learning framework for prioritizing gene fusions detected from RNA sequencing data. FusionRank annotates the candidate fusions with biological, genomic, and structural features and ranks them according to their predicted oncogenic relevance using a Learning-to-Rank (LambdaRank) model trained on curated fusion databases. FusionRank supports fusion calls with or without breakpoint coordinate information and generates a ranked summary report for downstream review. 
 
-FusionRank is a machine learning-based tool for prioritizing gene fusions detected from RNA sequencing data. It annotates fusion candidates with structural, biological, and genomic features and ranks them by predicted oncogenic relevance using a Learning-to-Rank LambdaRank model trained on curated fusion databases.
+## FusionRank supports two modes for prediction:
+### 1. Breakpoint-Level Model
+- **FR_gene_breakpoint_model**: Uses both fusion partner gene names, chromosomal breakpoint coordinates, and reported strandness.
 
-FusionRank supports two modes:
-- **Breakpoint-level ranking** (`FR_gene_breakpoint_model`) — uses chromosomal breakpoint coordinates for full annotation including cDNA features and region classification
-- **Gene-name-level ranking** (`FR_gene_name_model`) — works without breakpoint coordinates for callers that do not report breakpoint information
+### 2. Gene Name-Level Model
+- **FR_gene_name_model**: Uses only fusion partner gene names for when breakpoint coordinates are unavailable. 
 
-If you use FusionRank in your research, please cite ... 
+---
 
+# Quick Start
 
-## FusionRank Installation (single pip command)
-
-From the repo root, install locally with dependencies and CLI entrypoint:
-
+## 1. FusionRank Installation (single pip command)
+From the repository root:
 ```bash
 pip install .
 ```
 
-This installs the `fusionrank` command in your environment, so you can run:
-
+Verify installation:
 ```bash
 fusionrank --help
 ```
+---
 
-No separate prerequisite-install step is required.
-
-
-### Download References 
-To download the reference files used for feature annotation, run the following command:
-```
+## 2. Download FusionRank Reference Files
+```bash
 wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
+tar -xzf FR_refs.tar.gz
 ```
+---
 
+## 3. Download Required GENCODE Files
+FusionRank requires the following GENCODE v49 files. Download them into the same reference directory.
 
-# Additional References: 
-- Three main reference files from GENCODE (gencode.v49) are necessary and should be downloaded to the same folder as the previous reference files: https://www.gencodegenes.org/human/
-
-### 1. Basic gene annotation (CHR)
-```
+### Basic Gene Annotation
+```bash
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.basic.annotation.gtf.gz
 ```
-
-### 2. Transcript Sequences (ALL)
-```
+### Transcript Sequences
+```bash
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.transcripts.fa.gz
 ```
-
-### 3. Protein-coding transcript translation sequences (ALL)
-```
+### Protein-Coding Translation Sequences
+```bash
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.pc_translations.fa.gz
 ```
-
 ---
 
-
-# FusionRank Run Command
-
+# Running FusionRank
 ```bash
 fusionrank <input_file> \
-  --sample-prefix <sample_prefix> \
-  --output-dir <output_base_dir> \
-  --refs-dir <reference_root> \
-  --model-dir <model_dir>
-```
-## FusionRank Input Parameters
-- `input_file` (positional): fusion input TSV.
-- `--sample-prefix`: prefix used for output files and run directory naming.
-- `--refs-dir`: path to the reference root folder; paths are auto-discovered by expected filenames/subfolders (no manual refs JSON needed).
-- `--model-dir`: directory containing the trained model files (`fusion_lambdarank.txt`, `feature_cols.pkl`, `categorical_cols.pkl`). Two models are available:
-  - `FR_gene_breakpoint_model` — requires breakpoint columns (`gene1_chr`, `gene1_bkp`, `gene1_strand`, `gene2_chr`, `gene2_bkp`, `gene2_strand`)
-  - `FR_gene_name_model` — works without breakpoint columns (gene name level only)
-
-> **Note:** Breakpoint columns are optional. If absent, breakpoint annotation and cDNA features are skipped automatically and `FR_gene_name_model` should be used.
-
-
-## Optional one-time PyEnsembl pre-index (recommended)
-If the pipeline appears to stall during cDNA annotation (PyEnsembl indexing), run this once first:
-
-```bash
-python prepare_pyensembl_cache.py --refs-dir <reference_root>
+    --sample-prefix <sample_prefix> \
+    --output-dir <output_dir> \
+    --refs-dir <reference_dir> \
+    --model-dir <model_dir>
 ```
 
-Then run FusionRank normally.
+## Required Parameters
+
+| Parameter | Description |
+|:------------:|:------------:|
+| `input_file` | Fusion calls as a TSV file (see below for input file format) |
+| `--sample-prefix` | Prefix used for output files |
+| `--output-dir` | Directory for Output folder with sample-prefix |
+| `--refs-dir` | Reference directory |
+| `--model-dir` | Directory containing trained model files |
+
+---
+
+## Model Selection
+FusionRank provides two pretrained models. Select the appropriate model by specifying the path with `--model-dir`.
+
+### Breakpoint-Level Model
+Use when chromosomal breakpoint coordinates are available:
+```text
+--model-dir /path/to/FR_gene_breakpoint_model
+```
+
+### Gene-Level Model
+Use when only fusion partner gene names are available:
+```text
+--model-dir /path/to/FR_gene_name_model
+```
+
+> **Note:** Replace the example paths above with the location of the downloaded model directory on your system. FusionRank automatically detects whether breakpoint columns are present in the input file. If breakpoint information is unavailable, breakpoint-dependent annotations are skipped and the gene-level model should be specified.
 
 
 ---
 
-# FusionRank Outputs
+## Input Format
+Input files must be tab-separated (TSV) files containing one fusion candidate per row.
 
-Created under `<output_dir>/<sample_prefix>/`:
-- `<sample_prefix>_annotated.tsv`
-- `<sample_prefix>_annotated_ranked.tsv`
-- `<sample_prefix>_summary.tsv`
-- `<sample_prefix>_top5.tsv`
+### Required Columns
 
-Summary files include: sample/cancer/rank/fusion, normalized score, best breakpoints, database evidence, drug evidence, gene biology, panel evidence, and all breakpoint candidates with normalized scores.
+| sample_id | cancer_type | gene1 | gene2 |
+|------------|------------|--------|--------|
+| K562_rep1 | LAML | BCR | ABL1 |
+| Sample_02 | LUAD | EML4 | ALK |
 
+**Column descriptions**
+
+| Column | Description |
+|----------|----------|
+| `sample_id` | Unique sample identifier |
+| `cancer_type` | TCGA or pediatric cancer acronym |
+| `gene1` | 5' fusion partner gene |
+| `gene2` | 3' fusion partner gene |
+
+> **Note:** FusionRank supports processing multiple samples within a single input file. Fusion candidates are automatically grouped by `sample_id`, and ranking is performed independently within each sample.
 
 ---
 
-## Supported Cancer Types
+### Optional Additional Breakpoint (hg38) Columns
+The following columns are required only when using the breakpoint-level model (`FR_gene_breakpoint_model`).
 
-The `cancer_type` column must use one of the following TCGA/pediatric acronyms:
+| sample_id | cancer_type | gene1 | gene2 | gene1_chr | gene1_bkp | gene1_strand | gene2_chr | gene2_bkp | gene2_strand |
+|------------|------------|--------|--------|------------|------------|------------|------------|------------|------------|
+| K562_rep1 | LAML | BCR | ABL1 | chr22 | 23290410 | + | chr9 | 130854063 | + |
+
+**Breakpoint column descriptions**
+
+| Column | Description |
+|----------|----------|
+| `sample_id` | Unique sample identifier |
+| `cancer_type` | TCGA or pediatric cancer acronym |
+| `gene1_chr` | Chromosome of the 5' fusion breakpoint |
+| `gene1_bkp` | Genomic coordinate of the 5' breakpoint |
+| `gene1_strand` | Strand of the 5' breakpoint (`+` or `-`) |
+| `gene2_chr` | Chromosome of the 3' fusion breakpoint |
+| `gene2_bkp` | Genomic coordinate of the 3' breakpoint |
+| `gene2_strand` | Strand of the 3' breakpoint (`+` or `-`) |
+
+> **Note:** If breakpoint columns are omitted, FusionRank automatically skips breakpoint-dependent annotations and should be run using the gene-level model (`FR_gene_name_model`).
+
+---
+
+# Supported Cancer Types
+
+The `cancer_type` column must contain one of the following cancer acronyms:
 
 | Cancer Acronym | Full Name |
-|:---------:|:-----------:|
+|:---------:|:-----------|
 | ACC | Adrenocortical Carcinoma |
 | ALL | Acute Lymphoblastic Leukemia |
 | BLCA | Bladder Urothelial Carcinoma |
@@ -144,6 +181,33 @@ The `cancer_type` column must use one of the following TCGA/pediatric acronyms:
 | UCEC | Uterine Corpus Endometrial Carcinoma |
 | UVM | Uveal Melanoma |
 | WT | Wilms Tumor |
+
+---
+
+# Outputs
+Results are written to:
+```text
+<output_dir>/<sample_prefix>/
+```
+
+**Generated files include:**
+| File | Description |
+|--------|--------|
+| `<sample_prefix>_annotated.tsv` | Annotated fusion candidates |
+| `<sample_prefix>_annotated_ranked.tsv` | Ranked fusion predictions |
+| `<sample_prefix>_summary.tsv` | Summary report |
+| `<sample_prefix>_top5.tsv` | Top-ranked fusion candidates |
+
+---
+
+# Processing Notes:
+
+## Optional one-time PyEnsembl pre-index (recommended)
+If the pipeline appears to stall during cDNA annotation (PyEnsembl indexing), run this once first:
+```bash
+python prepare_pyensembl_cache.py --refs-dir <reference_root>
+```
+Then run FusionRank normally.
 
 --- 
 Refs now use explicit OmniPath file keys: `ppi_adjacency_file`, `ppi_centrality_file`, and `ppi_edges_file` (auto-discovered when using `--refs-dir`).
