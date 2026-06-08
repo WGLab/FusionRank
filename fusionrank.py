@@ -41,11 +41,11 @@ def main():
         refs=refs,
     )
 
-    print('\n[16] Loading model and ranking...')
+    print('\nLoading model and ranking...')
     model, feature_cols, categorical_cols = load_model(args.model_dir)
     df = rank_fusions(df, model, feature_cols, categorical_cols)
 
-    print('\n[17] Saving outputs...')
+    print('\nSaving outputs...')
     full_out = run_output_dir / f'{args.sample_prefix}_annotated_ranked.tsv'
     df.to_csv(full_out, sep='\t', index=False)
     print(f'    Full:    {full_out}')

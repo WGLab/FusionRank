@@ -1286,7 +1286,7 @@ def make_summary_tsv(df, refs):
 
     bkp_text = (
         bkp_df.groupby(key_cols, sort=False)
-        .apply(_bkp_text)
+        .apply(_bkp_text, include_groups=False)
         .rename('all_breakpoints')
         .reset_index()
     )
