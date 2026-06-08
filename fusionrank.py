@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('--sample-prefix', required=True, help='Sample prefix used for output files')
     parser.add_argument('--output-dir', required=True, help='Base output directory')
     parser.add_argument('--refs-dir', required=True, help='Path to reference root folder (auto-resolve required files)')
-    parser.add_argument('--model-dir', required=True, help='Directory containing trained gene-breakpoint ranking model files (for example, FR_gene_breakpoint_model)')
+    parser.add_argument('--model-dir', required=True, help='Directory containing trained model files. Use FR_gene_breakpoint_model (requires breakpoint columns) or FR_gene_name_model (gene name level, no breakpoints required)')
     return parser.parse_args()
 
 
