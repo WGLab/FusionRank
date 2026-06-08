@@ -26,7 +26,7 @@ def _has_breakpoint_cols(df):
     return all(c in df.columns for c in BKP_INPUT_COLS)
 
 def preprocess_fusion_df(input_file):
-    print(f'[0] Preprocessing: {input_file}')
+    print(f'Preprocessing: {input_file}')
     df = pd.read_csv(input_file, sep='\t')
 
     has_bkp = _has_breakpoint_cols(df)
@@ -71,7 +71,7 @@ def annotate_civic(df, refs):
           civic_has_therapeutic, civic_match_score
     Used by: relevance score (tier 4 therapeutic check)
     """
-    print('[1] CIViC...')
+    print('CIViC...')
     df = df.copy()
     civic = pd.read_csv(refs['civic_file'], sep='\t')
 
@@ -166,7 +166,7 @@ def annotate_cosmic(df, refs):
           cosmic_gene_involved, cosmic_match_score
     Used by: relevance score (tier 3 & tier 2 pathway 1)
     """
-    print('[2] COSMIC...')
+    print('COSMIC...')
     df = df.copy()
     cosmic = pd.read_csv(refs['cosmic_file'], sep='\t')
 
@@ -204,8 +204,66 @@ def annotate_cosmic(df, refs):
           f'cosmic_gene_involved: {df["cosmic_gene_involved"].sum()}')
     return df
 
+
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [3]  CANCERMINE + HUGO GENE FUNCTION FLAGS                  ║
+# ║  [3]  MITELMAN                                               ║
+# ║       → in_mitelman_exact, in_mitelman_same_cancer           ║
+# ║       → mitelman_literature_count, mitelman_same_cancer_count║
+# ║       → mitelman_match_score                                 ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+def annotate_mitelman(df, refs):
+    """
+    Adds: in_mitelman_exact, in_mitelman_same_cancer,
+          mitelman_literature_count, mitelman_same_cancer_count,
+          mitelman_match_score
+    Used by: relevance score (tier 2 pathway 3)
+    """
+    print('Mitelman...')
+    df = df.copy()
+    mit = pd.read_csv(refs['mitelman_file'], sep='\t').rename(columns={'Fusion Gene':'fusion_name'})
+
+    split = mit['fusion_name'].str.split('::')
+    mit_pairs = (
+        set(mit['fusion_name'].str.upper()) |
+        set((split.str[1]+'::'+split.str[0]).str.upper())
+    )
+    max_count = (mit.groupby('fusion_name')['Count'].max().reset_index()
+                 .rename(columns={'Count':'mitelman_max_count'}))
+    mc_map = dict(zip(max_count['fusion_name'].str.upper(), max_count['mitelman_max_count']))
+    mc_map.update(dict(zip(
+        (max_count['fusion_name'].str.split('::').str[1]+'::'+
+         max_count['fusion_name'].str.split('::').str[0]).str.upper(),
+        max_count['mitelman_max_count']
+    )))
+
+    mit_by_cancer = {}
+    for ct in mit['tcga_cancer_type'].unique():
+        sub = mit[mit['tcga_cancer_type']==ct]
+        sp  = sub['fusion_name'].str.split('::')
+        m   = dict(zip(sub['fusion_name'].str.upper(), sub['Count']))
+        m.update(dict(zip((sp.str[1]+'::'+sp.str[0]).str.upper(), sub['Count'])))
+        mit_by_cancer[ct] = m
+
+    fn_up = df['fusion_name'].str.upper()
+    df['in_mitelman_exact']       = fn_up.isin(mit_pairs).astype(int)
+    df['in_mitelman_same_cancer'] = df.apply(
+        lambda r: int(r['cancer_type'] in mit_by_cancer and
+                      r['fusion_name'].upper() in mit_by_cancer[r['cancer_type']]), axis=1)
+    df['mitelman_literature_count']  = fn_up.map(mc_map).fillna(0).astype(int)
+    df['mitelman_same_cancer_count'] = df.apply(
+        lambda r: mit_by_cancer.get(r['cancer_type'],{}).get(r['fusion_name'].upper(),0), axis=1)
+    df['mitelman_match_score'] = df.apply(
+        lambda r: (2 if r['cancer_type'] in mit_by_cancer and
+                        r['fusion_name'].upper() in mit_by_cancer[r['cancer_type']]
+                   else 1 if r['fusion_name'].upper() in mit_pairs else 0), axis=1)
+
+    print(f'    in_mitelman_exact: {df["in_mitelman_exact"].sum()}')
+    return df
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  [4]  CANCERMINE + HUGO GENE FUNCTION FLAGS                  ║
 # ║       → gene1/2_{oncogene, tsg, driver, is_kinase, is_tf,    ║
 # ║          is_rna_binding, is_chromatin, is_rtk,               ║
 # ║          is_phosphatase, is_cell_cycle, is_ubiquitin,        ║
@@ -219,7 +277,7 @@ def annotate_gene_function(df, refs):
      ubiquitin, gtpase, dna_repair).
     Used by: relevance score (tiers 1-3) + model features
     """
-    print('[3] CancerMine + HUGO gene function...')
+    print('CancerMine + HUGO gene function...')
     df = df.copy()
 
     # ── CancerMine ────────────────────────────────────────────
@@ -277,7 +335,7 @@ def annotate_gene_function(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [4]  CLINICAL PANELS                                        ║
+# ║  [5]  CLINICAL PANELS                                        ║
 # ║       → gene1/2_in_any_panel                                 ║
 # ╚══════════════════════════════════════════════════════════════╝
 
@@ -286,7 +344,7 @@ def annotate_panels(df, refs):
     Adds: gene1_in_any_panel, gene2_in_any_panel
     Model feature.
     """
-    print('[4] Clinical panels...')
+    print('Clinical panels...')
     df = df.copy()
     panel_df = pd.read_csv(refs['fusion_panels'], sep='\t')
     any_panel = set(panel_df['gene'].str.upper())
@@ -301,7 +359,7 @@ def annotate_panels(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [5]  TAD SAME DOMAIN                                        ║
+# ║  [6]  TAD SAME DOMAIN                                        ║
 # ║       → tad_same_domain                                      ║
 # ╚══════════════════════════════════════════════════════════════╝
 
@@ -310,7 +368,7 @@ def annotate_tad(df, refs):
     Adds: tad_same_domain
     Model feature.
     """
-    print('[5] TAD boundary...')
+    print('TAD boundary...')
     df = df.copy()
     with open(refs['tad_pickle'], 'rb') as f:
         tad_dict = pickle.load(f)
@@ -323,7 +381,7 @@ def annotate_tad(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [6]  PPI NETWORK  (OmniPath)                                ║
+# ║  [7]  PPI NETWORK  (OmniPath)                                ║
 # ║       → gene1/2_centrality, centrality_sum/max_log           ║
 # ║       → ppi_direct_interaction, ppi_interaction_score        ║
 # ║       → ppi_shared_neighbors, ppi_jaccard_similarity         ║
@@ -342,7 +400,7 @@ def annotate_ppi(df, refs):
 
     Run preprocess_omnipath.py once to generate these files.
     """
-    print('[6] PPI network (from cache)...')
+    print('PPI network (from cache)...')
     df = df.copy()
 
     # ── Load cache files ──────────────────────────────────────
@@ -396,7 +454,7 @@ def annotate_ppi(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║  [7] DRUGGABILITY                                                ║
+# ║  [8] DRUGGABILITY                                                ║
 # ║       → fusion_is_druggable, fusion_is_druggable_cancer_specific ║
 # ║       → fusion_has_druggable_gene, gene1/2_is_druggable          ║
 # ║       → gene1/2_druggable_cancer_specific                        ║
@@ -411,7 +469,7 @@ def annotate_druggability(df, refs):
           fusion_gene_druggable_cancer_specific
     Used by: relevance score (all tiers)
     """
-    print('[7] Druggability...')
+    print('Druggability...')
     df = df.copy()
     drug = pd.read_csv(refs['druggable_file'], sep='\t')
 
@@ -453,7 +511,7 @@ def annotate_druggability(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [8] BREAKPOINT REGION ANNOTATION  (bedtools)                ║
+# ║  [9] BREAKPOINT REGION ANNOTATION  (bedtools)                ║
 # ║       → gene1/2_region_type, gene1/2_bkp_category            ║
 # ║       → gene1/2_transcript_id  (needed by Part 12)           ║
 # ╚══════════════════════════════════════════════════════════════╝
@@ -486,7 +544,7 @@ def annotate_breakpoints(df, refs, output_dir, project_name):
     If breakpoint columns (gene1/2_chr, gene1/2_bkp, gene1/2_strand) are absent
     from df, all output columns are set to pd.NA and bedtools is skipped entirely.
     """
-    print('[8] Breakpoint annotation (bedtools)...')
+    print('Breakpoint annotation (bedtools)...')
 
     if not _has_breakpoint_cols(df):
         print('    ⚠️  Breakpoint columns not found — skipping bedtools, filling outputs with NA')
@@ -669,7 +727,7 @@ def annotate_breakpoints(df, refs, output_dir, project_name):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [9] cDNA / PYENSEMBL FEATURES                               ║
+# ║  [10] cDNA / PYENSEMBL FEATURES                              ║
 # ║       → gene1/2_frame_mod3, fusion_in_frame, has_early_stop  ║
 # ║       → gene1/2_fusion_pct                                   ║
 # ║       → log_gene1/2_len_nt, log_gene1/2_utr5/3_len           ║
@@ -696,7 +754,7 @@ def annotate_cdna_features(df, refs):
     was skipped due to missing breakpoint columns), all output columns are
     set to pd.NA and the function returns early.
     """
-    print('[9] cDNA features (PyEnsembl)...')
+    print('cDNA features (PyEnsembl)...')
 
     # Guard: transcript_id columns must exist and have at least one non-NA value
     tx_cols_present = (
@@ -805,7 +863,7 @@ def annotate_cdna_features(df, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [10] CANCER DB                                              ║
+# ║  [11] CANCER DB                                              ║
 # ║       → gene1/2_in_cancer_db, gene1/2_cancer_db_mismatch     ║
 # ║       → gene1/2_unknown_in_cancer                            ║
 # ╚══════════════════════════════════════════════════════════════╝
@@ -893,7 +951,7 @@ def annotate_cancer_db(df, refs, valid_cancer_types=VALID_CANCER_TYPES):
       gene1/2_unknown_in_cancer  — gene not found in any cancer DB
     Model features.
     """
-    print('[13] Cancer DB annotation...')
+    print('Cancer DB annotation...')
     df = df.copy()
 
     gene_cancer_lookup = _build_cancer_db_lookup(refs, valid_cancer_types)
@@ -921,7 +979,7 @@ def annotate_cancer_db(df, refs, valid_cancer_types=VALID_CANCER_TYPES):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [11] EXPRESSION  ← STUB                                     ║
+# ║  [12] EXPRESSION  ← STUB                                     ║
 # ║       → g1/2_log_exp, gene1/2_exp_low                        ║
 # ║       → gene1/2_low_everywhere                               ║
 # ║       → fusion_tissue_fit, exp_cancer_mismatch               ║
@@ -938,7 +996,7 @@ def annotate_expression(df, refs, low_percentile=0.50, abs_floor=1.0):
     Run preprocess_hpa_expression.py once to generate these files.
     Falls back to computing from refs['hpa_file'] if cache not found.
     """
-    print(f'[14] Expression annotation (HPA, p{low_percentile*100:.0f} + floor={abs_floor} pTPM)...')
+    print(f'Expression annotation (HPA, p{low_percentile*100:.0f} + floor={abs_floor} pTPM)...')
     df = df.copy()
 
     cache_dir = refs.get('hpa_cache_dir')
@@ -1043,6 +1101,7 @@ def run_full_pipeline(input_file, output_dir, project_name, refs):
     df = preprocess_fusion_df(input_file)
     df = annotate_civic(df, refs)
     df = annotate_cosmic(df, refs)
+    df = annotate_mitelman(df, refs)
     df = annotate_gene_function(df, refs)
     df = annotate_panels(df, refs)
     df = annotate_tad(df, refs)
@@ -1061,7 +1120,7 @@ def run_full_pipeline(input_file, output_dir, project_name, refs):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [12]  RANKING                                               ║
+# ║  [13]  RANKING                                               ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 
@@ -1104,7 +1163,7 @@ def rank_fusions(df, model, feature_cols, categorical_cols):
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  [13]  SUMMARY OUTPUT                                        ║
+# ║  [14]  SUMMARY OUTPUT                                        ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 def make_summary_tsv(df, refs):
@@ -1253,6 +1312,8 @@ def make_summary_tsv(df, refs):
         db_evidence = []
         if getattr(row, 'in_civic_exact', 0):
             db_evidence.append('CIViC exact match')
+        if getattr(row, 'in_mitelman_exact', 0):
+            db_evidence.append('Mitelman DB match')
         if getattr(row, 'in_cosmic_exact', 0):
             db_evidence.append('COSMIC exact match')
         if getattr(row, 'in_cosmic_same_cancer', 0):
