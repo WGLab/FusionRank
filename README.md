@@ -95,14 +95,14 @@ Input files must be tab-separated (TSV) files containing one fusion candidate pe
 ### Required Columns
 
 | sample_id | cancer_type | gene1 | gene2 |
-|------------|------------|--------|--------|
+|:------------:|:------------:|:--------:|:--------:|
 | K562_rep1 | LAML | BCR | ABL1 |
 | Sample_02 | LUAD | EML4 | ALK |
 
 **Column descriptions**
 
 | Column | Description |
-|----------|----------|
+|:----------:|:----------:|
 | `sample_id` | Unique sample identifier |
 | `cancer_type` | TCGA or pediatric cancer acronym |
 | `gene1` | 5' fusion partner gene |
@@ -116,13 +116,13 @@ Input files must be tab-separated (TSV) files containing one fusion candidate pe
 The following columns are required only when using the breakpoint-level model (`FR_gene_breakpoint_model`).
 
 | sample_id | cancer_type | gene1 | gene2 | gene1_chr | gene1_bkp | gene1_strand | gene2_chr | gene2_bkp | gene2_strand |
-|------------|------------|--------|--------|------------|------------|------------|------------|------------|------------|
+|:------------:|:------------:|:--------:|:--------:|:------------:|:------------:|:------------:|:------------:|:------------:|:------------:|
 | K562_rep1 | LAML | BCR | ABL1 | chr22 | 23290410 | + | chr9 | 130854063 | + |
 
 **Breakpoint column descriptions**
 
 | Column | Description |
-|----------|----------|
+|:----------:|:----------:|
 | `sample_id` | Unique sample identifier |
 | `cancer_type` | TCGA or pediatric cancer acronym |
 | `gene1_chr` | Chromosome of the 5' fusion breakpoint |
@@ -141,7 +141,7 @@ The following columns are required only when using the breakpoint-level model (`
 The `cancer_type` column must contain one of the following cancer acronyms:
 
 | Cancer Acronym | Full Name |
-|:---------:|:-----------|
+|:---------:|:-----------:|
 | ACC | Adrenocortical Carcinoma |
 | ALL | Acute Lymphoblastic Leukemia |
 | BLCA | Bladder Urothelial Carcinoma |
@@ -192,7 +192,7 @@ Results are written to:
 
 **Generated files include:**
 | File | Description |
-|--------|--------|
+|:--------:|:--------:|
 | `<sample_prefix>_annotated.tsv` | Annotated fusion candidates |
 | `<sample_prefix>_annotated_ranked.tsv` | Ranked fusion predictions |
 | `<sample_prefix>_summary.tsv` | Summary report |
