@@ -1,7 +1,7 @@
 # FusionRank
 FusionRank is a machine learning framework for prioritizing gene fusions detected from RNA sequencing data. FusionRank annotates the candidate fusions with biological, genomic, and structural features and ranks them according to their predicted oncogenic relevance using a Learning-to-Rank (LambdaRank) model trained on curated fusion databases. FusionRank supports fusion calls with or without breakpoint coordinate information and generates a ranked summary report for downstream review. 
 
-<img width="1074" height="469" alt="Image" src="https://github.com/user-attachments/assets/16d35d2a-4b56-4497-ae6a-04e661930eb4" />
+<img width="1074" height="463" alt="Image" src="https://github.com/user-attachments/assets/242357d9-869c-4063-a954-e948e8ae5f0f" />
 
 ## FusionRank supports two modes for prediction:
 ### 1. Breakpoint-Level Model
