@@ -14,9 +14,23 @@ FusionRank is a machine learning framework for prioritizing gene fusions detecte
 
 # Quick Start
 
-## 1. FusionRank Installation (single pip command)
-From the repository root:
+## 1. Recommended Requirements
+
+Create a conda environment: 
 ```bash
+conda create -n fusionrank python=3.10.14
+conda activate fusionrank
+conda install -c bioconda bedtools
+```
+
+> **Note:** `bedtools` must be installed separately via conda before running FusionRank. It is required for breakpoint-based annotation. If you are using the gene name-based model (`FR_gene_name_model`) only, `bedtools` is not required.
+ 
+
+## 2. FusionRank Installation (single pip command)
+Clone the repository and install, from the repository root:
+```bash
+git clone https://github.com/WGLab/FusionRank.git
+cd FusionRank
 pip install .
 ```
 
@@ -26,14 +40,14 @@ fusionrank --help
 ```
 ---
 
-## 2. Download FusionRank Reference Files
+## 3. Download FusionRank Reference Files
 ```bash
 wget https://github.com/WGLab/FusionRank/releases/download/v0.1.0/FR_refs.tar.gz
 tar -xzf FR_refs.tar.gz
 ```
 ---
 
-## 3. Download Required GENCODE Files
+## 4. Download Required GENCODE Files
 FusionRank requires the following GENCODE v49 files. Download them into the same reference directory.
 
 ### Basic Gene Annotation
@@ -50,7 +64,7 @@ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencod
 ```
 ---
 
-# Running FusionRank
+# 5. Running FusionRank
 ```bash
 fusionrank <input_file> \
     --sample-prefix <sample_prefix> \
