@@ -2,6 +2,7 @@
 
 import json
 import os
+from html import escape
 import pickle
 import re
 import subprocess
@@ -1384,6 +1385,165 @@ def make_summary_tsv(df, refs):
         result = result.sort_values(['Sample', 'Rank']).reset_index(drop=True)
         return result[display_cols]
     return pd.DataFrame(columns=display_cols)
+
+
+def write_summary_html(summary_df, output_path, sample_prefix):
+    """Write an easy-to-read HTML report for the ranked fusion summary."""
+
+    def fmt(value):
+        if pd.isna(value):
+            return '—'
+        return escape(str(value)).replace('\n', '<br>')
+
+    def row_class(row):
+        try:
+            rank = int(row['Rank'])
+        except (TypeError, ValueError):
+            rank = None
+        return ' class="top-rank"' if rank is not None and rank <= 5 else ''
+
+    columns = list(summary_df.columns)
+    generated_label = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+    row_count = len(summary_df)
+    sample_count = summary_df['Sample'].nunique() if 'Sample' in summary_df.columns and row_count else 0
+
+    header_html = ''.join(f'<th>{escape(str(col))}</th>' for col in columns)
+    if row_count:
+        body_rows = []
+        for _, row in summary_df.iterrows():
+            cells = ''.join(f'<td>{fmt(row[col])}</td>' for col in columns)
+            body_rows.append(f'<tr{row_class(row)}>{cells}</tr>')
+        body_html = '\n'.join(body_rows)
+    else:
+        colspan = max(len(columns), 1)
+        body_html = f'<tr><td class="empty" colspan="{colspan}">No fusion candidates were reported.</td></tr>'
+
+    html_text = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FusionRank Summary - {escape(str(sample_prefix))}</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --border: #d9e2ec;
+      --header: #12355b;
+      --header-text: #ffffff;
+      --accent: #e8f3ff;
+      --top: #fff7dc;
+    }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }}
+    main {{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }}
+    .report-header {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      margin-bottom: 24px;
+      padding: 24px;
+    }}
+    h1 {{
+      margin: 0 0 8px;
+      color: var(--header);
+      font-size: 1.9rem;
+    }}
+    .meta {{
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 12px;
+    }}
+    .meta strong {{ color: var(--text); }}
+    .table-wrap {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      overflow: auto;
+    }}
+    table {{
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1200px;
+      width: 100%;
+    }}
+    th, td {{
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+    }}
+    th {{
+      background: var(--header);
+      color: var(--header-text);
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      position: sticky;
+      text-transform: uppercase;
+      top: 0;
+      z-index: 1;
+    }}
+    tbody tr:nth-child(even) {{ background: #fbfdff; }}
+    tbody tr:hover {{ background: var(--accent); }}
+    tbody tr.top-rank {{ background: var(--top); }}
+    td:nth-child(3), td:nth-child(5) {{
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }}
+    td:nth-child(4) {{ font-weight: 700; }}
+    .empty {{
+      color: var(--muted);
+      text-align: center;
+    }}
+    .hint {{
+      color: var(--muted);
+      margin: 16px 0 0;
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <section class="report-header">
+      <h1>FusionRank Summary</h1>
+      <p class="hint">Ranked fusion candidates with evidence fields formatted for browser review. Rows ranked 1–5 are highlighted.</p>
+      <div class="meta">
+        <span><strong>Sample prefix:</strong> {escape(str(sample_prefix))}</span>
+        <span><strong>Samples:</strong> {sample_count:,}</span>
+        <span><strong>Fusions:</strong> {row_count:,}</span>
+        <span><strong>Generated:</strong> {generated_label}</span>
+      </div>
+    </section>
+    <section class="table-wrap" aria-label="FusionRank summary table">
+      <table>
+        <thead><tr>{header_html}</tr></thead>
+        <tbody>
+{body_html}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
+"""
+    with open(output_path, 'w', encoding='utf-8') as handle:
+        handle.write(html_text)
 
 
 

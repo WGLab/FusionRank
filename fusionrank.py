@@ -19,7 +19,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from fusionrank_core import load_model, make_summary_tsv, rank_fusions, run_full_pipeline
+    from fusionrank_core import load_model, make_summary_tsv, rank_fusions, run_full_pipeline, write_summary_html
 
     refs = load_refs_from_dir(args.refs_dir)
 
@@ -55,10 +55,18 @@ def main():
     summary_df.to_csv(summary_out, sep='\t', index=False)
     print(f'    Summary: {summary_out}')
 
-    top5_out = run_output_dir / f'{args.sample_prefix}_top5.tsv'
-    rank_col = 'Rank' if 'Rank' in summary_df.columns else 'rank'
-    summary_df[summary_df[rank_col] <= 5].to_csv(top5_out, sep='\t', index=False)
-    print(f'    Top 5:   {top5_out}')
+    html_out = run_output_dir / f'{args.sample_prefix}_summary.html'
+    write_summary_html(summary_df, html_out, args.sample_prefix)
+
+    if not html_out.exists():
+        raise RuntimeError(f'HTML summary was not created: {html_out}')
+    print(f'    HTML:    {html_out}')
+
+    legacy_top5_out = run_output_dir / f'{args.sample_prefix}_top5.tsv'
+    if legacy_top5_out.exists():
+        legacy_top5_out.unlink()
+        print(f'    Removed legacy Top 5 TSV: {legacy_top5_out}')
+
 
     print(f'\n{"="*60}')
     print(f'✅  Done. Final shape: {df.shape}')
