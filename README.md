@@ -81,9 +81,7 @@ fusionrank <input_file> \
 | `--sample-prefix` | Prefix used for output files |
 | `--output-dir` | Directory for Output folder with sample-prefix |
 | `--refs-dir` | Reference directory |
-| `--model-dir` | Directory containing trained model files |
-
----
+| `--model-dir` | Directory containing trained model files (see below) |
 
 ## Model Selection
 FusionRank provides two pretrained models. Select the appropriate model by specifying the path with `--model-dir`.
@@ -200,7 +198,7 @@ The `cancer_type` column must contain one of the following cancer acronyms:
 
 ---
 
-# Outputs
+# Output Files
 Results are written to:
 ```text
 <output_dir>/<sample_prefix>/
@@ -208,11 +206,11 @@ Results are written to:
 
 **Generated files include:**
 | File | Description |
-|:--------:|:--------:|
-| `<sample_prefix>_annotated.tsv` | Annotated fusion candidates |
-| `<sample_prefix>_annotated_ranked.tsv` | Ranked fusion predictions |
-| `<sample_prefix>_summary.tsv` | Summary report |
-| `<sample_prefix>_top5.tsv` | Top-ranked fusion candidates |
+|:-----:|:------------:|
+| `<sample_prefix>_annotated.tsv` | Full feature matrix with all annotation columns |
+| `<sample_prefix>_annotated_ranked.tsv` | Annotated fusions with annoations, predicted scores, and per-sample ranks |
+| `<sample_prefix>_summary.tsv` | Evidence-oriented summary with database, drug, biology, and panel annotations |
+| `<sample_prefix>_summary.html` | Browser-viewable ranked fusion report with top 5 candidates highlighted |
 
 ---
 
