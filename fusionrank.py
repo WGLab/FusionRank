@@ -38,7 +38,14 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from fusionrank_core import load_model, make_summary_tsv, rank_fusions, run_full_pipeline, write_summary_html
+    from fusionrank_core import (
+        load_model,
+        make_ranked_input_tsv,
+        make_summary_tsv,
+        rank_fusions,
+        run_full_pipeline,
+        write_summary_html,
+    )
 
     refs = load_refs_from_dir(args.refs_dir)
 
@@ -65,30 +72,33 @@ def main():
     df = rank_fusions(df, model, feature_cols, categorical_cols)
 
     print('\nSaving outputs...')
-    full_out = run_output_dir / f'{args.sample_prefix}_annotated_ranked.tsv'
-    df.to_csv(full_out, sep='\t', index=False)
-    print(f'    Full:    {full_out}')
-
+    ranked_out = run_output_dir / f'{args.sample_prefix}_ranked.tsv'
+    ranked_df = make_ranked_input_tsv(df, args.input_file)
+    ranked_df.to_csv(ranked_out, sep='\t', index=False)
+    
+    print(f'Ranked Fusions: {ranked_out}')
+    legacy_annotated_ranked_out = run_output_dir / f'{args.sample_prefix}_annotated_ranked.tsv'
+    if legacy_annotated_ranked_out.exists():
+        legacy_annotated_ranked_out.unlink()
+    
     summary_df = make_summary_tsv(df, refs)
     summary_out = run_output_dir / f'{args.sample_prefix}_summary.tsv'
     summary_df.to_csv(summary_out, sep='\t', index=False)
-    print(f'    Summary: {summary_out}')
 
     html_out = run_output_dir / f'{args.sample_prefix}_summary.html'
     write_summary_html(summary_df, html_out, args.sample_prefix)
 
     if not html_out.exists():
         raise RuntimeError(f'HTML summary was not created: {html_out}')
-    print(f'    HTML:    {html_out}')
+    print(f'Annotation Summary: {html_out}')
 
     legacy_top5_out = run_output_dir / f'{args.sample_prefix}_top5.tsv'
     if legacy_top5_out.exists():
         legacy_top5_out.unlink()
-        print(f'    Removed legacy Top 5 TSV: {legacy_top5_out}')
 
     moved_bed_files = move_bed_outputs(run_output_dir)
     if moved_bed_files:
-        print(f"    BED files: {run_output_dir / 'bed_files'} ({len(moved_bed_files)} files)")
+        print(f"BED Files: {run_output_dir / 'bed_files'}")
 
     print(f'\n{"="*60}')
     print(f'✅  Done. Final shape: {df.shape}')
