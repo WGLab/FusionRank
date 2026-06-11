@@ -6,6 +6,25 @@ from pathlib import Path
 from fusionrank_config import load_refs_from_dir
 
 
+def move_bed_outputs(output_dir):
+    """Move BED artifacts into an output subdirectory after pipeline completion."""
+    output_dir = Path(output_dir)
+    bed_dir = output_dir / 'bed_files'
+    moved = []
+
+    for bed_file in sorted(output_dir.glob('*.bed')):
+        if not bed_dir.exists():
+            bed_dir.mkdir(parents=True, exist_ok=True)
+
+        destination = bed_dir / bed_file.name
+        if destination.exists():
+            destination.unlink()
+        bed_file.replace(destination)
+        moved.append(destination)
+
+    return moved
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='FusionRank annotation + ranking pipeline')
     parser.add_argument('input_file', help='Input fusion TSV file')
@@ -67,6 +86,9 @@ def main():
         legacy_top5_out.unlink()
         print(f'    Removed legacy Top 5 TSV: {legacy_top5_out}')
 
+    moved_bed_files = move_bed_outputs(run_output_dir)
+    if moved_bed_files:
+        print(f"    BED files: {run_output_dir / 'bed_files'} ({len(moved_bed_files)} files)")
 
     print(f'\n{"="*60}')
     print(f'✅  Done. Final shape: {df.shape}')
