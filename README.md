@@ -214,20 +214,5 @@ Results are written to:
 
 ---
 
-# Processing Notes:
-
-## Optional one-time PyEnsembl pre-index (recommended)
-If the pipeline appears to stall during cDNA annotation (PyEnsembl indexing), run this once first:
-```bash
-python prepare_pyensembl_cache.py --refs-dir <reference_root>
-```
-Then run FusionRank normally.
-
---- 
-Refs now use explicit OmniPath file keys: `ppi_adjacency_file`, `ppi_centrality_file`, and `ppi_edges_file` (auto-discovered when using `--refs-dir`).
-
-Reference directory behavior: `--refs-dir` is the only reference input. The pipeline auto-discovers required files under that folder, creates `gencode_v49_downloads_cache/` inside it if missing, and expects these GENCODE files at the refs root: `gencode.v49.basic.annotation.gtf.gz`, `gencode.v49.transcripts.fa.gz`, `gencode.v49.pc_translations.fa.gz`.
-
-If HPA cache files are not present yet, FusionRank can fall back to a raw HPA table if one of these files exists under `--refs-dir`: `hpa_expression.tsv`, `hpa_cancer_expression.tsv`, `HPA_cancer_expression.tsv`, `hpa_tcga_median_ptpm.tsv`, or `hpa_median_ptpm.tsv`.
-
-HPA expression cache files can be placed directly in `--refs-dir`: `hpa_exp_dict.pkl`, `hpa_thresholds.tsv`, `hpa_low_everywhere.txt`.
+# Citation
+Please cite FusionRank at the following ... 
