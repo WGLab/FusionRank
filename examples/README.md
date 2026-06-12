@@ -32,11 +32,12 @@ Expected outputs are provided in `expected_output/` for reference.
 
 <img width="966" height="899" alt="Image" src="https://github.com/user-attachments/assets/b3872dc0-93ec-4a47-ae5c-cf6fbc498193" />
 
+---
 
-An interactive browser-viewable report with the following columns:
+### An interactive browser-viewable report with the following columns:
 
 | Column | Description |
-|--------|-------------|
+|:--------:|:-------------:|
 | Sample | Sample identifier |
 | Cancer | TCGA cancer type |
 | Rank | Within-sample rank |
