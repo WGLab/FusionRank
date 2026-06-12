@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FusionRank Summary - K562_breakpoints</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --border: #d9e2ec;
+      --header: #12355b;
+      --header-text: #ffffff;
+      --accent: #e8f3ff;
+      --top: #f0fdf4;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    .report-header {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      margin-bottom: 24px;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      color: var(--header);
+      font-size: 1.9rem;
+    }
+    .meta {
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .meta strong { color: var(--text); }
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      overflow: auto;
+    }
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1200px;
+      width: 100%;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+    }
+    th {
+      background: var(--header);
+      color: var(--header-text);
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      position: sticky;
+      text-transform: uppercase;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) { background: #fbfdff; }
+    tbody tr:hover { background: var(--accent); }
+    tbody tr.top-rank { background: var(--top); }
+    td:nth-child(3), td:nth-child(5) {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    td:nth-child(4) { font-weight: 700; }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+    }
+    .hint {
+      color: var(--muted);
+      margin: 16px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="report-header">
+      <h1>FusionRank Summary</h1>
+      <p class="hint">Ranked fusion candidates with evidence fields formatted for browser review. Rows ranked 1–5 are highlighted.</p>
+      <div class="meta">
+        <span><strong>Sample prefix:</strong> K562_breakpoints</span>
+        <span><strong>Samples:</strong> 1</span>
+        <span><strong>Fusions:</strong> 42</span>
+        <span><strong>Generated:</strong> 2026-06-12 11:39:32</span>
+      </div>
+    </section>
+    <section class="table-wrap" aria-label="FusionRank summary table">
+      <table>
+        <thead><tr><th>Sample</th><th>Cancer</th><th>Rank</th><th>Fusion</th><th>Score (0-1)</th><th>Gene1 Breakpoint</th><th>Gene2 Breakpoint</th><th>Database Evidence</th><th>Drug Evidence</th><th>Gene Biology</th><th>Panel Evidence</th><th>All Breakpoints (Norm. Score)</th></tr></thead>
+        <tbody>
+<tr class="top-rank"><td>K562_cell_line</td><td>LAML</td><td>1</td><td>BCR::ABL1</td><td>1.0</td><td>chr22:23,290,406</td><td>chr9:130,854,062</td><td>CIViC exact match<br>Mitelman DB match<br>COSMIC exact match<br>COSMIC same cancer</td><td>Approved therapy (CIViC)<br>BCR::ABL1 — druggable in LAML</td><td>BCR: oncogene, TSG (conflicting)<br>ABL1: kinase, oncogene</td><td>BCR, ABL1</td><td>BCR;chr22:23290406,ABL1;chr9:130854062;1.000</td></tr>
+<tr class="top-rank"><td>K562_cell_line</td><td>LAML</td><td>2</td><td>EWSR1::FANCI</td><td>0.479</td><td>chr22:29,288,780</td><td>chr15:89,278,678</td><td>COSMIC gene involved</td><td>EWSR1 — druggable (other cancers)</td><td>EWSR1: oncogene, TSG (conflicting)<br>FANCI: oncogene</td><td>EWSR1, FANCI</td><td>EWSR1;chr22:29288780,FANCI;chr15:89278678;0.479</td></tr>
+<tr class="top-rank"><td>K562_cell_line</td><td>LAML</td><td>3</td><td>TMEM9::MAPK1</td><td>0.378</td><td>chr1:201,135,722</td><td>chr22:21,760,659</td><td>—</td><td>MAPK1 — druggable (other cancers)</td><td>MAPK1: kinase, oncogene</td><td>MAPK1</td><td>TMEM9;chr1:201135722,MAPK1;chr22:21760659;0.378</td></tr>
+<tr class="top-rank"><td>K562_cell_line</td><td>LAML</td><td>4</td><td>CELSR2::TCF3</td><td>0.374</td><td>chr1:109,274,998</td><td>chr19:1,609,475</td><td>COSMIC gene involved</td><td>—</td><td>TCF3: oncogene, TSG (conflicting)</td><td>TCF3</td><td>CELSR2;chr1:109274998,TCF3;chr19:1609475;0.374</td></tr>
+<tr class="top-rank"><td>K562_cell_line</td><td>LAML</td><td>5</td><td>SFPQ::PAK4</td><td>0.368</td><td>chr1:35,189,040</td><td>chr19:39,144,008</td><td>COSMIC gene involved</td><td>—</td><td>SFPQ: oncogene<br>PAK4: oncogene</td><td>SFPQ</td><td>SFPQ;chr1:35189040,PAK4;chr19:39144008;0.368</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>6</td><td>NONO::NSUN3</td><td>0.352</td><td>chrX:71,291,876</td><td>chr3:94,128,201</td><td>COSMIC gene involved</td><td>—</td><td>NONO: oncogene</td><td>NONO</td><td>NONO;chrX:71291876,NSUN3;chr3:94128201;0.352</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>7</td><td>NUP214::XKR3</td><td>0.346</td><td>chr9:131,199,013</td><td>chr22:16,808,085</td><td>Mitelman DB match<br>COSMIC gene involved</td><td>NUP214 — druggable in LAML</td><td>NUP214: oncogene</td><td>NUP214</td><td>NUP214;chr9:131199013,XKR3;chr22:16808085;0.346</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>8</td><td>NPM1::ATP5F1B</td><td>0.339</td><td>chr5:171,391,740</td><td>chr12:56,639,308</td><td>COSMIC gene involved</td><td>NPM1 — druggable (other cancers)</td><td>NPM1: oncogene, TSG (conflicting)</td><td>NPM1</td><td>NPM1;chr5:171391740,ATP5F1B;chr12:56639308;0.339</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>9</td><td>ATP5F1B::NPM1</td><td>0.329</td><td>chr12:56,639,308</td><td>chr5:171,391,740</td><td>COSMIC gene involved</td><td>NPM1 — druggable (other cancers)</td><td>NPM1: oncogene, TSG (conflicting)</td><td>NPM1</td><td>ATP5F1B;chr12:56639308,NPM1;chr5:171391740;0.329</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>10</td><td>PRDX1::SET</td><td>0.326</td><td>chr1:45,515,749</td><td>chr9:128,696,265</td><td>COSMIC gene involved</td><td>—</td><td>PRDX1: TSG, oncogene (conflicting)<br>SET: oncogene</td><td>SET</td><td>PRDX1;chr1:45515749,SET;chr9:128696265;0.326</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>11</td><td>SBNO1::TFRC</td><td>0.322</td><td>chr12:123,289,422</td><td>chr3:196,075,210</td><td>COSMIC gene involved</td><td>—</td><td>SBNO1: oncogene<br>TFRC: oncogene</td><td>TFRC</td><td>SBNO1;chr12:123289422,TFRC;chr3:196075210;0.322</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>12</td><td>NUP214::CTBP1</td><td>0.312</td><td>chr9:131,128,406</td><td>chr4:1,211,762</td><td>COSMIC gene involved</td><td>NUP214 — druggable in LAML</td><td>NUP214: oncogene<br>CTBP1: oncogene, TSG (conflicting)</td><td>NUP214</td><td>NUP214;chr9:131128406,CTBP1;chr4:1211762;0.312</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>13</td><td>TFRC::SBNO1</td><td>0.309</td><td>chr3:196,075,210</td><td>chr12:123,289,422</td><td>COSMIC gene involved</td><td>—</td><td>TFRC: oncogene<br>SBNO1: oncogene</td><td>TFRC</td><td>TFRC;chr3:196075210,SBNO1;chr12:123289422;0.309</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>14</td><td>NSUN3::NONO</td><td>0.305</td><td>chr3:94,128,201</td><td>chrX:71,291,876</td><td>COSMIC gene involved</td><td>—</td><td>NONO: oncogene</td><td>NONO</td><td>NSUN3;chr3:94128201,NONO;chrX:71291876;0.305</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>15</td><td>NPM1::CNBP</td><td>0.273</td><td>chr5:171,405,329</td><td>chr3:129,169,773</td><td>COSMIC gene involved</td><td>NPM1 — druggable (other cancers)</td><td>NPM1: oncogene, TSG (conflicting)</td><td>NPM1, CNBP</td><td>NPM1;chr5:171405329,CNBP;chr3:129169773;0.273</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>16</td><td>NF2::C9orf78</td><td>0.271</td><td>chr22:29,696,188</td><td>chr9:129,827,841</td><td>—</td><td>—</td><td>NF2: kinase, oncogene, TSG (strong evidence)</td><td>NF2</td><td>NF2;chr22:29696188,C9orf78;chr9:129827841;0.271</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>17</td><td>ANAPC5::PABPC1</td><td>0.265</td><td>chr12:121,345,869</td><td>chr8:100,703,153</td><td>—</td><td>—</td><td>PABPC1: oncogene, TSG (conflicting)</td><td>—</td><td>ANAPC5;chr12:121345869,PABPC1;chr8:100703153;0.265</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>18</td><td>LSM14A::CTSA</td><td>0.25</td><td>chr19:34,194,575</td><td>chr20:45,898,688</td><td>COSMIC gene involved</td><td>—</td><td>CTSA: oncogene</td><td>—</td><td>LSM14A;chr19:34194575,CTSA;chr20:45898688;0.250</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>19</td><td>MAX::PABPC1</td><td>0.25</td><td>chr14:65,084,191</td><td>chr8:100,703,094</td><td>—</td><td>—</td><td>PABPC1: oncogene, TSG (conflicting)</td><td>MAX</td><td>MAX;chr14:65084191,PABPC1;chr8:100703094;0.250</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>20</td><td>RAD51C::SYAP1</td><td>0.248</td><td>chr17:58,695,091</td><td>chrX:16,760,425</td><td>—</td><td>—</td><td>RAD51C: TSG, oncogene (conflicting)</td><td>RAD51C</td><td>RAD51C;chr17:58695091,SYAP1;chrX:16760425;0.248</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>21</td><td>NACA::CCNA2</td><td>0.233</td><td>chr12:56,712,425</td><td>chr4:121,818,062</td><td>COSMIC gene involved</td><td>—</td><td>CCNA2: oncogene</td><td>NACA</td><td>NACA;chr12:56712425,CCNA2;chr4:121818062;0.233</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>22</td><td>GGPS1::PAFAH1B2</td><td>0.217</td><td>chr1:235,343,520</td><td>chr11:117,161,257</td><td>COSMIC gene involved</td><td>—</td><td>—</td><td>PAFAH1B2</td><td>GGPS1;chr1:235343520,PAFAH1B2;chr11:117161257;0.217</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>23</td><td>GAPDH::SSX1</td><td>0.205</td><td>chr12:6,537,387</td><td>chrX:48,266,943</td><td>COSMIC gene involved</td><td>—</td><td>GAPDH: oncogene<br>SSX1: oncogene</td><td>SSX1</td><td>GAPDH;chr12:6537387,SSX1;chrX:48266943;0.205</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>24</td><td>PSMB3::HSP90AB1</td><td>0.202</td><td>chr17:38,753,333</td><td>chr6:44,253,486</td><td>COSMIC gene involved</td><td>—</td><td>HSP90AB1: oncogene</td><td>HSP90AB1</td><td>PSMB3;chr17:38753333,HSP90AB1;chr6:44253486;0.202</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>25</td><td>NCOR1::WAC-AS1</td><td>0.201</td><td>chr17:16,215,374</td><td>chr10:28,523,025</td><td>COSMIC gene involved</td><td>—</td><td>NCOR1: oncogene, TSG (conflicting)</td><td>NCOR1</td><td>NCOR1;chr17:16215374,WAC-AS1;chr10:28523025;0.201</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>26</td><td>PABPC1::LMNB1</td><td>0.189</td><td>chr8:100,703,086</td><td>chr5:126,836,690</td><td>—</td><td>—</td><td>PABPC1: oncogene, TSG (conflicting)<br>LMNB1: TSG, oncogene (conflicting)</td><td>—</td><td>PABPC1;chr8:100703086,LMNB1;chr5:126836690;0.189</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>27</td><td>AAAS::PABPC1</td><td>0.188</td><td>chr12:53,314,408</td><td>chr8:100,703,304</td><td>—</td><td>—</td><td>PABPC1: oncogene, TSG (conflicting)</td><td>—</td><td>AAAS;chr12:53314408,PABPC1;chr8:100703304;0.188</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>28</td><td>NACA::TBL1XR1</td><td>0.182</td><td>chr12:56,712,813</td><td>chr3:177,020,989</td><td>COSMIC gene involved</td><td>—</td><td>TBL1XR1: TSG, oncogene (conflicting)</td><td>NACA, TBL1XR1</td><td>NACA;chr12:56712813,TBL1XR1;chr3:177020989;0.182</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>29</td><td>ERBB2::ENSG00000280441</td><td>0.182</td><td>chr17:39,729,285</td><td>chr21:8,394,345</td><td>—</td><td>ERBB2 — druggable (other cancers)</td><td>ERBB2: RTK, oncogene</td><td>ERBB2</td><td>ERBB2;chr17:39729285,ENSG00000280441;chr21:8394345;0.182</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>30</td><td>SDHB::HNRNPD</td><td>0.177</td><td>chr1:17,018,778</td><td>chr4:82,357,340</td><td>—</td><td>—</td><td>SDHB: TSG<br>HNRNPD: oncogene</td><td>SDHB</td><td>SDHB;chr1:17018778,HNRNPD;chr4:82357340;0.177</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>31</td><td>MYL6::ATIC</td><td>0.172</td><td>chr12:56,160,054</td><td>chr2:215,338,901</td><td>COSMIC gene involved</td><td>—</td><td>ATIC: oncogene</td><td>ATIC</td><td>MYL6;chr12:56160054,ATIC;chr2:215338901;0.172</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>32</td><td>ATP5PD::GATA2</td><td>0.171</td><td>chr17:75,038,955</td><td>chr3:128,479,921</td><td>—</td><td>—</td><td>GATA2: oncogene, TSG (conflicting)</td><td>GATA2</td><td>ATP5PD;chr17:75038955,GATA2;chr3:128479921;0.171</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>33</td><td>PSMC5::HMGA1</td><td>0.169</td><td>chr17:63,830,332</td><td>chr6:34,245,573</td><td>—</td><td>—</td><td>HMGA1: oncogene, TSG (conflicting)</td><td>HMGA1</td><td>PSMC5;chr17:63830332,HMGA1;chr6:34245573;0.169</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>34</td><td>PRR13::BRCA1</td><td>0.164</td><td>chr12:53,442,917</td><td>chr17:43,044,883</td><td>—</td><td>BRCA1 — druggable (other cancers)</td><td>BRCA1: TSG, oncogene (conflicting)</td><td>BRCA1</td><td>PRR13;chr12:53442917,BRCA1;chr17:43044883;0.164</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>35</td><td>PAFAH1B2::GGPS1</td><td>0.158</td><td>chr11:117,161,256</td><td>chr1:235,343,520</td><td>COSMIC gene involved</td><td>—</td><td>—</td><td>PAFAH1B2</td><td>PAFAH1B2;chr11:117161256,GGPS1;chr1:235343520;0.158</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>36</td><td>H1-2::SUB1</td><td>0.157</td><td>chr6:26,056,030</td><td>chr5:32,602,890</td><td>—</td><td>—</td><td>H1-2: oncogene<br>SUB1: oncogene, TSG (conflicting)</td><td>—</td><td>H1-2;chr6:26056030,SUB1;chr5:32602890;0.157</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>37</td><td>SDHB::METTL2A</td><td>0.148</td><td>chr1:17,044,760</td><td>chr17:62,444,833</td><td>—</td><td>—</td><td>SDHB: TSG</td><td>SDHB</td><td>SDHB;chr1:17044760,METTL2A;chr17:62444833;0.148</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>38</td><td>IDH2::ENSG00000268790</td><td>0.12</td><td>chr15:90,083,182</td><td>chr19:16,634,118</td><td>—</td><td>—</td><td>IDH2: oncogene, TSG (conflicting)</td><td>IDH2</td><td>IDH2;chr15:90083182,ENSG00000268790;chr19:16634118;0.120</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>39</td><td>BTK::COX5B</td><td>0.114</td><td>chrX:101,362,172</td><td>chr2:97,648,042</td><td>—</td><td>—</td><td>BTK: kinase, oncogene</td><td>BTK</td><td>BTK;chrX:101362172,COX5B;chr2:97648042;0.114</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>40</td><td>KCTD2::GATA2</td><td>0.114</td><td>chr17:75,038,955</td><td>chr3:128,479,921</td><td>—</td><td>—</td><td>GATA2: oncogene, TSG (conflicting)</td><td>GATA2</td><td>KCTD2;chr17:75038955,GATA2;chr3:128479921;0.114</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>41</td><td>ATIC::MYL6</td><td>0.105</td><td>chr2:215,338,900</td><td>chr12:56,160,054</td><td>COSMIC gene involved</td><td>—</td><td>ATIC: oncogene</td><td>ATIC</td><td>ATIC;chr2:215338900,MYL6;chr12:56160054;0.105</td></tr>
+<tr><td>K562_cell_line</td><td>LAML</td><td>42</td><td>MALAT1::AP2S1</td><td>0.0</td><td>chr11:65,500,724</td><td>chr19:46,838,367</td><td>COSMIC gene involved</td><td>—</td><td>—</td><td>—</td><td>MALAT1;chr11:65500724,AP2S1;chr19:46838367;0.000</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
