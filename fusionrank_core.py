@@ -1455,7 +1455,7 @@ def write_summary_html(summary_df, output_path, sample_prefix):
       --header: #12355b;
       --header-text: #ffffff;
       --accent: #e8f3ff;
-      --top: #fff7dc;
+      --top: #f0fdf4;
     }}
     body {{
       margin: 0;
