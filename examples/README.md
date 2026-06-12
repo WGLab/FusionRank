@@ -5,7 +5,6 @@ This directory contains example input files and expected outputs for FusionRank 
 
 ## Example Run Commands
 
-
 ### Run with breakpoint coordinates
 ```bash
 fusionrank /path/to/examples/input/K562_input_fusions_breakpoints.tsv \
@@ -31,7 +30,7 @@ Expected outputs are provided in `expected_output/` for reference.
 ## Output: `_summary.html` Overview
 
 
-
+<img width="966" height="899" alt="Image" src="https://github.com/user-attachments/assets/b3872dc0-93ec-4a47-ae5c-cf6fbc498193" />
 
 
 An interactive browser-viewable report with the following columns:
