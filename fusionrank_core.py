@@ -1166,21 +1166,30 @@ def rank_fusions(df, model, feature_cols, categorical_cols):
 
 
 def make_ranked_input_tsv(df, input_file):
-    """Return ranked output with the original input columns plus a per-sample Rank column."""
+    """Return ranked output with original input columns, Rank, and predicted_score."""
     input_cols = pd.read_csv(input_file, sep='\t', nrows=0).columns.tolist()
-    output_cols = [col for col in input_cols if col != 'Rank'] + ['Rank']
+    output_cols = [
+        col for col in input_cols
+        if col not in ['Rank', 'predicted_score']
+    ] + ['Rank', 'predicted_score']
 
     ranked_df = df.copy()
     ranked_df['Rank'] = ranked_df['rank'].astype(int)
 
-    missing_cols = [col for col in input_cols if col not in ranked_df.columns and col != 'Rank']
+    missing_cols = [
+        col for col in input_cols
+        if col not in ranked_df.columns
+        and col not in ['Rank', 'predicted_score']
+    ]
     if missing_cols:
         raise ValueError(
             'Ranked output cannot be created because input columns are missing after processing: '
             + ', '.join(missing_cols)
         )
 
-    return ranked_df.sort_values(['sample_id', 'Rank']).loc[:, output_cols].reset_index(drop=True)
+    return ranked_df.sort_values(
+        ['sample_id', 'Rank']
+    ).loc[:, output_cols].reset_index(drop=True)
 
 
 # ╔══════════════════════════════════════════════════════════════╗
